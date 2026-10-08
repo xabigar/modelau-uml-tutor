@@ -1,0 +1,15 @@
+Ejercicio: préstamos de una biblioteca
+
+Una biblioteca quiere gestionar los préstamos de sus libros.
+
+Cada libro tiene un código, un título y un autor. Para simplificar, cada libro representa un único ejemplar físico.
+
+Cada socio tiene un número de socio, un nombre y un correo electrónico.
+
+Cuando un socio toma prestado un libro, se registra un préstamo con la fecha de inicio, la fecha prevista de devolución y la fecha de devolución real. Esta última queda vacía hasta que el libro se devuelve.
+
+Un socio puede tener varios préstamos. Cada préstamo corresponde a un único socio y a un único libro. Un libro puede aparecer en muchos préstamos a lo largo del tiempo, pero solo puede tener un préstamo activo a la vez.
+
+La biblioteca debe poder registrar un préstamo y registrar su devolución.
+
+Crea un diagrama de clases UML que represente este sistema. Incluye los atributos principales, las relaciones y sus multiplicidades. Decide en qué clase situar las operaciones necesarias y explica brevemente tu decisión.

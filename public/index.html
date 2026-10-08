@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ModelaU · UML learning studio</title><link rel="icon" type="image/x-icon" href="/favicon.ico?v=20261008-1" sizes="32x32"><link rel="stylesheet" href="/styles.css"><script type="module" src="/app.js"></script></head>
+<body>
+<header class="app-header">
+  <div class="brand"><img class="site-logo" src="/assets/site-logo.png" alt="ModelaU" width="210" height="70"><small data-i18n="subtitle">Un espacio para aprender UML</small></div>
+  <div class="header-actions">
+    <div class="language-control"><svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c-5 5-5 13 0 18M12 3c5 5 5 13 0 18"/></svg><select id="language" aria-label="Idioma"><option value="es">Español</option><option value="en">English</option></select></div>
+    <button id="settingsButton" type="button" class="llm-settings-button"><svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3-.6 2.5-2 .9-2.3-.8-2 3.4 1.8 1.7v2.6L2.1 15l2 3.4 2.3-.8 2 .9L9 21h4l.6-2.5 2-.9 2.3.8 2-3.4-1.8-1.7v-2.6L19.9 9l-2-3.4-2.3.8-2-.9L13 3Z"/><circle cx="11" cy="12" r="3"/></svg><span class="settings-label" data-i18n="settings">Configurar LLM</span><span class="settings-label-short" aria-hidden="true">LLM</span></button>
+  </div>
+</header>
+<main id="workspace" class="assistant-hidden">
+<section class="designer">
+  <div class="panel-head designer-head"><div class="designer-heading"><h2 data-i18n="designer">Diseñador</h2><span id="saveStatus" class="save-status" role="status" aria-live="polite"></span></div>
+  <div class="designer-toolbar">
+    <label class="diagram-choice"><span data-i18n="diagram">Diagrama</span><select id="diagramType"><option value="class" data-i18n="class">Clases</option><option value="usecase" data-i18n="usecase">Casos de uso</option><option value="sequence" data-i18n="sequence">Secuencia</option></select></label>
+    <button id="newDiagram" type="button" class="new-diagram"><svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="newShort">Nuevo</span></button>
+  </div>
+  </div>
+  <div class="scroll">
+    <p class="hint" id="designerHint"></p>
+    <details id="classGroup" class="designer-group" open>
+      <summary class="group-heading"><span class="group-title"><span id="elementGroupTitle">Clases</span><span id="classCount" class="count-badge">0</span></span><span id="classNewSlot"><button id="addElement" class="primary" type="button">+ Nueva clase</button></span></summary>
+      <div id="elements"></div>
+    </details>
+    <details id="useCaseGroup" class="designer-group" open hidden>
+      <summary class="group-heading"><span class="group-title"><span data-i18n="usecase">Casos de uso</span><span id="useCaseCount" class="count-badge">0</span></span><button id="newUseCase" class="primary" type="button" data-i18n="newUseCaseButton">+ Nuevo caso de uso</button></summary>
+      <div id="useCaseList"></div>
+    </details>
+    <details id="relationshipGroup" class="designer-group" open>
+      <summary class="group-heading"><span class="group-title"><span id="relationGroupTitle">Relaciones</span><span id="relationshipCount" class="count-badge">0</span></span><button id="newRelationship" class="primary" type="button" data-i18n="newRelationship">+ Nueva relación</button></summary>
+      <div id="relationshipList"></div>
+    </details>
+
+    <details id="sequenceTools" class="designer-group" hidden><summary class="group-heading"><span class="group-title" data-i18n="sequenceTools">Fragmentos y activación</span></summary><div class="sequence-tools-body"><label><span data-i18n="fragmentCondition">Condición</span><input id="condition" placeholder="condición"></label><div class="row"><button id="addAlt" type="button">+ alt / else</button><button id="addLoop" type="button">+ loop</button></div><label><span data-i18n="participantKind">Participante</span><select id="activationTarget"></select></label><div class="row"><button id="activate" type="button" data-i18n="activate">Activar</button><button id="deactivate" type="button" data-i18n="deactivate">Desactivar</button></div><p class="error" id="sequenceError" role="alert"></p></div></details>
+  </div>
+</section>
+<section class="diagram-panel"><div class="panel-head"><div><h2 data-i18n="yourDiagram">Tu diagrama</h2></div><div class="tabs" role="tablist"><button id="previewTab" role="tab" aria-selected="true" aria-controls="preview" data-i18n="preview">Vista</button><button id="codeTab" role="tab" aria-selected="false" aria-controls="codeView" data-i18n="code">Código</button></div></div><div class="diagram-tools"><span id="renderStatus" class="muted" aria-live="polite"></span><div><a id="svgLink" target="_blank" rel="noopener">SVG ↗</a><a id="pngLink" target="_blank" rel="noopener">PNG ↗</a><button id="exportCode" data-i18n="export">Exportar .puml</button></div></div><div id="zoomToolbar" class="zoom-toolbar">
+  <div class="zoom-buttons"><button id="zoomOut" type="button" aria-label="Zoom out">−</button><output id="zoomLevel" aria-live="polite">100%</output><button id="zoomIn" type="button" aria-label="Zoom in">+</button><button id="zoomFit" type="button" data-i18n="fitDiagram">Ajustar</button></div>
+  <small id="panHint" data-i18n="panHint">Arrastra para moverte · Ctrl + rueda para zoom</small>
+</div>
+<div id="preview" role="tabpanel" tabindex="0" aria-labelledby="previewTab" aria-describedby="panHint"><div id="diagramCanvas"><img id="diagramImage" alt="Diagrama UML" draggable="false" hidden></div><p id="previewEmpty" class="hint"></p></div><div id="codeView" role="tabpanel" hidden><textarea id="code" spellcheck="false" aria-label="PlantUML code"></textarea><span id="lines" class="muted"></span></div><footer class="panel-footer" data-i18n="renderNote">El código se envía al servidor PlantUML configurado.</footer></section>
+<section class="exercise-panel"><div class="panel-head"><div><h2 data-i18n="exercise">Enunciado</h2></div><button id="loadExercise" data-i18n="load">Cargar</button><input type="file" id="exerciseFile" accept=".txt,.pdf,text/plain,application/pdf" hidden></div><div class="exercise-tools"><button id="editExercise" data-i18n="edit">Editar texto</button><button id="clearHighlights" data-i18n="clearHighlights">Quitar colores</button></div><textarea id="exerciseInput" maxlength="100000" data-placeholder="exercisePlaceholder" placeholder="Pega aquí el enunciado del ejercicio…" hidden></textarea><div id="exerciseHtml" class="scroll exercise-content"></div><div class="legend"><span class="requirement" data-i18n="requirement">Requisito</span><span class="actor" data-i18n="actor">Actor</span><span class="ambiguity" data-i18n="ambiguity">Por aclarar</span></div><p id="exerciseStatus" class="panel-footer" aria-live="polite"></p></section>
+<section class="chat-panel" id="chatPanel" aria-labelledby="assistantTitle" hidden><div class="panel-head"><div><img class="chat-avatar" src="/assets/assistant-logo.png" alt="" width="40" height="40"><h2 id="assistantTitle" data-i18n="assistant">UMLBuddy</h2></div><div class="chat-panel-actions"><button id="clearChat" data-i18n="clearChat">Limpiar</button><button id="closeAssistant" type="button" aria-label="Ocultar UMLBuddy" title="Ocultar UMLBuddy">×</button></div></div><div id="assistantConnection" class="assistant-info" data-state="unconfigured"><div class="connection-line"><span class="online-dot" aria-hidden="true"></span><span id="connectionStatus" role="status"></span></div><span id="modelStatus" class="model-detail"></span><small data-i18n="tutorNote">Pistas y preguntas para construir tu propia solución.</small></div><div id="messages" class="scroll" aria-live="polite"></div><div id="chatError" class="error" role="alert"></div><form id="chatForm"><textarea id="chatInput" maxlength="24000" rows="3" data-placeholder="chatPlaceholder" placeholder="¿Qué parte te está costando?" aria-describedby="chatKeyboardHint" required></textarea><small id="chatKeyboardHint" class="chat-keyboard-hint" data-i18n="enterHint">Enter para enviar · Mayús+Enter para salto de línea</small><div class="chat-actions"><small data-i18n="contextNote">Se comparten el enunciado y tu código actual.</small><button id="send" class="primary" type="submit" data-i18n="send">Enviar ↗</button></div></form></section>
+</main>
+<button id="assistantToggle" class="assistant-launcher" type="button" aria-controls="chatPanel" aria-expanded="false" aria-label="Abrir UMLBuddy">
+  <span id="assistantLauncherLabel" class="launcher-label">UMLBuddy</span>
+  <span class="tutor-avatar" aria-hidden="true">
+    <img src="/assets/assistant-logo.png" alt="" width="62" height="62">
+  </span>
+</button>
+<dialog id="elementDialog" aria-labelledby="elementTitle">
+<form id="elementForm">
+  <div class="dialog-head"><h2 id="elementTitle"></h2><button type="button" id="cancelElement" aria-label="Close">×</button></div>
+  <div class="row">
+    <label><span data-i18n="name">Nombre visible</span><input id="elementName" required maxlength="120" placeholder="Producto"></label>
+    <label><span data-i18n="kind">Tipo de elemento</span><select id="elementKind"></select></label>
+  </div>
+  <div id="classMemberFields">
+    <fieldset><legend data-i18n="attributes">Atributos</legend><div id="attributeRows"></div><button type="button" id="addAttribute" class="member-add" data-i18n="addAttribute">+ Añadir atributo</button></fieldset>
+    <fieldset><legend data-i18n="methods">Métodos</legend><div id="methodRows"></div><button type="button" id="addMethod" class="member-add" data-i18n="addMethod">+ Añadir método</button></fieldset>
+  </div>
+  <details id="elementAdvanced"><summary data-i18n="advanced">Opciones avanzadas</summary>
+    <label><span data-i18n="identifier">Identificador (sin espacios)</span><input id="elementId" required pattern="[A-Za-z_][A-Za-z0-9_]*" maxlength="80"></label>
+    <label id="extraMembersLabel" hidden><span data-i18n="extraMembers">Otras líneas PlantUML</span><textarea id="extraMembers" rows="3"></textarea></label>
+  </details>
+  <p class="error" id="elementError" role="alert"></p>
+  <div class="element-form-actions"><button type="button" id="cancelElementFooter" data-i18n="cancel">Cancelar</button><button class="primary" type="submit" id="saveElement" data-i18n="insertElement">Insertar en el código</button></div>
+</form>
+</dialog>
+<dialog id="relationDialog" aria-labelledby="relationDialogTitle">
+  <form id="relationForm">
+    <div class="dialog-head"><h2 id="relationDialogTitle"></h2><button id="closeRelationDialog" type="button" aria-label="Close">×</button></div>
+    <div id="relationDialogFields">
+      <div id="relationEditor" class="relation">
+        
+        <div class="row"><label><span data-i18n="from">Desde</span><select id="from"></select></label><label><span data-i18n="to">Hasta</span><select id="to"></select></label></div>
+        <label><span data-i18n="relationType">Tipo</span><select id="relationType"></select></label>
+        <div class="row" id="multiplicities"><label><span data-i18n="sourceMultiplicity">Multiplicidad origen</span><input id="m1" placeholder="1"></label><label><span data-i18n="targetMultiplicity">Multiplicidad destino</span><input id="m2" placeholder="*"></label></div>
+        <label><span data-i18n="label">Etiqueta / mensaje</span><input id="relationLabel" placeholder="…"></label>
+        <p class="error" id="designerError" role="alert"></p>
+      </div>
+    </div>
+    <div id="relationDialogActions" class="element-form-actions"><button id="cancelRelationDialog" type="button" data-i18n="cancel">Cancelar</button><button id="addRelation" type="submit" data-i18n="insertElement">Añadir relación</button></div>
+  </form>
+</dialog>
+<dialog id="settingsDialog" aria-labelledby="settingsTitle">
+  <form id="settingsForm">
+    <div class="dialog-head"><h2 id="settingsTitle" data-i18n="settings">Configurar LLM</h2><button type="button" id="closeSettings" aria-label="Close">×</button></div>
+    <p class="hint settings-intro" data-i18n="settingsIntro">Conecta un proveedor y elige el modelo para UMLBuddy.</p>
+    <fieldset class="settings-group">
+      <legend data-i18n="connection">Conexión</legend>
+      <label><span data-i18n="provider">Proveedor</span><select id="provider"><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option><option value="gemini">Google Gemini</option><option value="compatible">OpenAI compatible</option></select></label>
+      <label id="endpointLabel" hidden><span data-i18n="endpoint">URL base compatible (incluye /v1)</span><input id="endpoint" type="url" placeholder="http://localhost:11434/v1"><small data-i18n="endpointNote">La clave y el contexto se enviarán a esta dirección.</small></label>
+      <label><span>API key</span><span class="key-input"><input id="apiKey" type="password" autocomplete="off" maxlength="1000" spellcheck="false"><button id="toggleKey" type="button" aria-pressed="false" data-i18n="showKey">Mostrar</button></span><small id="keyHelp" data-i18n="modelsKeyHint">Introduce tu clave y pulsa «Cargar modelos».</small></label>
+    </fieldset>
+    <fieldset class="settings-group model-settings" id="modelSettings">
+      <legend data-i18n="assistantModel">Modelo de UMLBuddy</legend>
+      <div class="model-discovery-head"><span class="hint" data-i18n="modelsHint">Consulta los modelos del proveedor con tu clave.</span><button type="button" id="loadModels" data-i18n="loadModels">Cargar modelos</button></div>
+      <label id="modelSearchLabel" hidden><span data-i18n="searchModels">Buscar modelos</span><input id="modelSearch" type="search" data-placeholder="searchModelsPlaceholder" placeholder="Nombre o identificador…" autocomplete="off"></label>
+      <label><span data-i18n="model">Modelo</span><select id="modelSelect" aria-describedby="modelsStatus"></select></label>
+      <label id="manualModelLabel"><span data-i18n="manualModelId">Identificador del modelo</span><input id="model" placeholder="Model ID" maxlength="200" spellcheck="false" autocomplete="off"><small data-i18n="manualModelHint">Úsalo si tu endpoint no ofrece una lista o si el modelo no aparece.</small></label>
+      <p id="modelsStatus" class="models-status" role="status" aria-live="polite"></p>
+      <small data-i18n="modelCompatibility">El listado no garantiza cuota ni compatibilidad. Elige un modelo que admita conversación de texto.</small>
+    </fieldset>
+    <details class="settings-rendering"><summary data-i18n="renderingSettings">Servidor de diagramas</summary><label><span data-i18n="plantumlServer">Servidor PlantUML</span><input id="plantumlServer" type="url" required><small data-i18n="serverHint">Público para empezar; local para trabajar con contenido privado.</small></label></details>
+    <p class="hint key-note" data-i18n="keyNote">Una clave por proveedor, guardada en este navegador. El servidor la utiliza solo para la petición; no la guarda. localStorage no cifra las claves: usa este equipo solo si es de confianza.</p>
+    <p class="error" id="settingsError" role="alert"></p>
+    <div class="settings-actions"><button type="button" id="forgetKeys" data-i18n="forget">Borrar todas las claves</button><button class="primary" type="submit" data-i18n="save">Guardar</button></div>
+  </form>
+</dialog>
+</body></html>
