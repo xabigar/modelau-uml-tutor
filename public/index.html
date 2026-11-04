@@ -19,6 +19,7 @@
   </div>
   <div class="scroll">
     <p class="hint" id="designerHint"></p>
+    <label class="procedure-step"><span data-i18n="procedureStepLabel">Paso del proceso</span><select id="procedureStepSelect"></select></label>
     <details id="classGroup" class="designer-group" open>
       <summary class="group-heading"><span class="group-title"><span id="elementGroupTitle">Clases</span><span id="classCount" class="count-badge">0</span></span><span id="classNewSlot"><button id="addElement" class="primary" type="button">+ Nueva clase</button></span></summary>
       <div id="elements"></div>
@@ -104,6 +105,7 @@
       <small data-i18n="modelCompatibility">El listado no garantiza cuota ni compatibilidad. Elige un modelo que admita conversación de texto.</small>
     </fieldset>
     <details class="settings-rendering"><summary data-i18n="renderingSettings">Servidor de diagramas</summary><label><span data-i18n="plantumlServer">Servidor PlantUML</span><input id="plantumlServer" type="url" required><small data-i18n="serverHint">Público para empezar; local para trabajar con contenido privado.</small></label></details>
+    <details class="settings-nudge"><summary data-i18n="idleNudgeSettings">Avisos de inactividad</summary><label><span data-i18n="idleNudgeLabel">Avisar tras inactividad (minutos)</span><input id="idleNudgeMinutes" type="number" min="1" max="120" step="1"><small data-i18n="idleNudgeHint">Un aviso discreto aparece si el diagrama sigue incompleto tras este tiempo sin actividad.</small></label></details>
     <p class="hint key-note" data-i18n="keyNote">Una clave por proveedor, guardada en este navegador. El servidor la utiliza solo para la petición; no la guarda. localStorage no cifra las claves: usa este equipo solo si es de confianza.</p>
     <p class="error" id="settingsError" role="alert"></p>
     <div class="settings-actions"><button type="button" id="forgetKeys" data-i18n="forget">Borrar todas las claves</button><button class="primary" type="submit" data-i18n="save">Guardar</button></div>

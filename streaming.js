@@ -8,14 +8,14 @@ export function buildStreamingRequest(...args) {
   return request;
 }
 
-export async function* streamTutorReply(provider, response, exercise) {
+export async function* streamTutorReply(provider, response, exercise, diagramElements = []) {
   // Some compatible servers accept stream:true but return a regular JSON reply.
   if (!response.headers.get('content-type')?.includes('text/event-stream')) {
     const result = await response.json();
     if (result.error) throw new Error('El proveedor no pudo completar la respuesta.');
     const text = provider === 'anthropic' ? result.content?.filter(c => c.type === 'text').map(c => c.text).join('') : provider === 'gemini' ? result.candidates?.[0]?.content?.parts?.filter(p => !p.thought).map(p => p.text || '').join('') : result.choices?.[0]?.message?.content;
     if (!text) throw new Error('El proveedor no devolvió texto. Prueba otro modelo.');
-    yield { type:'done', ...parseTutorReply(text,exercise) }; return;
+    yield { type:'done', ...parseTutorReply(text,exercise,diagramElements) }; return;
   }
   let source = '', shown = '', complete = false;
   for await (const data of readSSE(response.body)) {
@@ -48,5 +48,5 @@ export async function* streamTutorReply(provider, response, exercise) {
   }
   if (!complete) throw new Error('La conexión se interrumpió antes de terminar. Reintenta el mensaje.');
   if (!source.trim()) throw new Error('El proveedor no devolvió texto. Prueba otro modelo.');
-  yield { type:'done', ...parseTutorReply(source,exercise) };
+  yield { type:'done', ...parseTutorReply(source,exercise,diagramElements) };
 }

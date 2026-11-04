@@ -1,6 +1,10 @@
 import { readSSE } from './chat-stream.js';
 import { parseClassMembers, serializeClassMembers } from './class-members.js';
 import { parseDiagramRelations, generateDiagramRelation, replaceDiagramRelation } from './diagram-relations.js';
+import { parseElements } from './diagram-elements.js';
+import { checkDiagram } from './diagram-checks.js';
+import { detectStep, stepList } from './procedure-steps.js';
+import { uncoveredHighlights } from './highlight-coverage.js';
 const $ = id => document.getElementById(id);
 const strings = {
  es: { subtitle:'Un espacio para aprender UML',settings:'Configurar LLM',diagram:'Diagrama',class:'Clases',usecase:'Casos de uso',sequence:'Secuencia',new:'Nuevo diagrama',designer:'Diseñador',add:'+ Elemento',from:'Desde',to:'Hasta',relationType:'Tipo',sourceMultiplicity:'Multiplicidad origen',targetMultiplicity:'Multiplicidad destino',label:'Etiqueta / mensaje',addRelation:'Añadir relación',sequenceTools:'Fragmentos y activación',fragmentCondition:'Condición',activate:'Activar',deactivate:'Desactivar',yourDiagram:'Tu diagrama',preview:'Vista',code:'Código',export:'Exportar .puml',renderNote:'El código se envía al servidor PlantUML configurado.',exercise:'Enunciado',load:'Cargar',edit:'Editar texto',done:'Listo',clearHighlights:'Quitar colores',exercisePlaceholder:'Pega aquí el enunciado del ejercicio…',requirement:'Requisito',actor:'Actor',ambiguity:'Por aclarar',assistant:'UMLBuddy',clearChat:'Limpiar',tutorNote:'Pistas y preguntas para construir tu propia solución.',chatPlaceholder:'¿Qué parte te está costando?',contextNote:'Se comparten el enunciado y tu código actual.',send:'Enviar ↗',name:'Nombre visible',identifier:'Identificador (sin espacios)',kind:'Tipo de elemento',members:'Atributos y métodos (uno por línea)',save:'Guardar',keyNote:'Una clave por proveedor, guardada en este navegador. El servidor la utiliza solo para la petición; no la guarda. localStorage no cifra las claves: usa este equipo solo si es de confianza.',provider:'Proveedor',model:'Identificador de modelo',modelHint:'Introduce un modelo disponible en tu cuenta.',endpoint:'URL base compatible (incluye /v1)',endpointNote:'La clave y el contexto se enviarán a esta dirección.',plantumlServer:'Servidor PlantUML',serverHint:'Público para empezar; local para trabajar con contenido privado.',forget:'Borrar todas las claves',saved:'Guardado en este navegador',storageError:'No se puede guardar en este navegador.',designerHint:'Crea elementos aquí o escribe PlantUML. El diseñador reconoce declaraciones simples; el código conserva las construcciones avanzadas.',relationTitle:'Nueva relación',messageTitle:'Nuevo mensaje',emptyElements:'Aún no hay elementos. Empieza con tu primera idea.',emptyExercise:'Carga un archivo .txt o PDF con texto, o pulsa «Editar texto» para pegar el enunciado.',emptyChat:'Soy UMLBuddy, tu compañero de aprendizaje. Comparte el enunciado y tu primer intento; podemos revisar una decisión o explorar qué hacer a continuación.',you:'Tú',showHighlights:'Ver fragmentos',noModel:'Configura un proveedor y modelo',rendering:'Generando…',renderError:'No se pudo cargar el diagrama. Revisa el código y el servidor.',rendered:'Vista actualizada',lines:'líneas',editElement:'Editar',deleteElement:'Eliminar',newElement:'Nuevo elemento',duplicate:'Ese identificador ya existe.',invalid:'Revisa el identificador y los miembros; no se admiten llaves ni directivas en este formulario.',missingElements:'Crea al menos un elemento.',relationRequired:'Escribe un mensaje para esta relación.',confirmNew:'¿Vaciar el diagrama y el chat de este tipo? El enunciado se conservará.',confirmDelete:'¿Eliminar este elemento y sus relaciones?',confirmChat:'¿Borrar el historial del chat?',loading:'Leyendo archivo…',loaded:'Archivo cargado',fileError:'Selecciona un archivo .txt o .pdf de hasta 10 MB.',thinking:'Pensando…',keyRequired:'Configura el proveedor, modelo y clave API antes de conversar.',requestError:'No se pudo completar la petición.',keyForgotten:'Claves eliminadas',serverInvalid:'Usa una URL HTTP o HTTPS sin credenciales, consultas ni fragmentos.',fileChanged:'El enunciado ha cambiado; los resaltados de esta respuesta ya no se aplican.',requestFailed:'No enviado · puedes reintentar',editHint:'Edita el código para cambiar relaciones o construcciones avanzadas.' },
@@ -28,18 +32,29 @@ Object.assign(strings.es, {emptyRelationships:'Todavía no hay relaciones. Crea 
 Object.assign(strings.en, {emptyRelationships:'No relationships yet. Create one to connect your elements.',relationRequired:'Enter the message text.'});
 Object.assign(strings.es, { chatReady:'Listo para conversar', chatNotReady:'Falta configurar la conexión', chatConnectionError:'Revisa la conexión', responding:'Respondiendo…', enterHint:'Enter para enviar · Mayús+Enter para salto de línea', readyHint:'Modelo y conexión configurados. La disponibilidad se comprueba al enviar.', sendingHint:'UMLBuddy está preparando su respuesta.' });
 Object.assign(strings.en, { chatReady:'Ready to chat', chatNotReady:'Connection needs setup', chatConnectionError:'Check the connection', responding:'Responding…', enterHint:'Enter to send · Shift+Enter for a new line', readyHint:'Model and connection configured. Availability is checked when you send.', sendingHint:'UMLBuddy is preparing a reply.' });
+Object.assign(strings.es, { noMultiplicity:'Esta relación no tiene multiplicidad en ningún extremo.', isolatedUseCase:'Este caso de uso no está conectado a nada todavía.', isolatedActor:'Este actor no está conectado a ningún caso de uso todavía.', isolatedParticipant:'Este participante no interviene en ningún mensaje todavía.' });
+Object.assign(strings.en, { noMultiplicity:'This relationship has no multiplicity on either end.', isolatedUseCase:'This use case isn’t connected to anything yet.', isolatedActor:'This actor isn’t connected to any use case yet.', isolatedParticipant:'This participant isn’t involved in any message yet.' });
+Object.assign(strings.es, { idleNudgeSettings:'Avisos de inactividad', idleNudgeLabel:'Avisar tras inactividad (minutos)', idleNudgeHint:'Un aviso discreto aparece si el diagrama sigue incompleto tras este tiempo sin actividad.', idleNudgeAria:'UMLBuddy · tu diagrama parece incompleto, quizás quieras seguir trabajando o preguntar' });
+Object.assign(strings.en, { idleNudgeSettings:'Inactivity nudges', idleNudgeLabel:'Nudge after inactivity (minutes)', idleNudgeHint:'A discreet nudge appears if the diagram is still incomplete after this much inactivity.', idleNudgeAria:'UMLBuddy · your diagram looks incomplete, you might want to keep working or ask a question' });
+Object.assign(strings.es, { uncoveredHint:'Todavía no aparece en tu diagrama.', showDiagramHighlights:'Ver en el diagrama' });
+Object.assign(strings.en, { uncoveredHint:'Not in your diagram yet.', showDiagramHighlights:'Show in diagram' });
+Object.assign(strings.es, { procedureStepLabel:'Paso del proceso', procedureStepAuto:'Automático', step_class_classes:'Identificar clases', step_class_attributes:'Añadir atributos', step_class_associations:'Añadir relaciones', step_class_multiplicities:'Añadir multiplicidades', step_class_methods:'Añadir métodos', step_class_review:'Revisar y refinar', step_usecase_actors:'Identificar actores', step_usecase_useCases:'Identificar casos de uso', step_usecase_links:'Conectar actores y casos de uso', step_usecase_review:'Revisar límites, include/extend', step_sequence_participants:'Identificar participantes', step_sequence_messages:'Añadir mensajes', step_sequence_allConnected:'Conectar a todos los participantes', step_sequence_fragments:'Modelar alternativas (alt/loop)', step_sequence_review:'Revisar y refinar' });
+Object.assign(strings.en, { procedureStepLabel:'Process step', procedureStepAuto:'Automatic', step_class_classes:'Identify classes', step_class_attributes:'Add attributes', step_class_associations:'Add relationships', step_class_multiplicities:'Add multiplicities', step_class_methods:'Add methods', step_class_review:'Review and refine', step_usecase_actors:'Identify actors', step_usecase_useCases:'Identify use cases', step_usecase_links:'Connect actors and use cases', step_usecase_review:'Review boundaries, include/extend', step_sequence_participants:'Identify participants', step_sequence_messages:'Add messages', step_sequence_allConnected:'Connect every participant', step_sequence_fragments:'Model alternatives (alt/loop)', step_sequence_review:'Review and refine' });
 const storageKey = 'modelai.workspace.v1', settingsKey = 'modelai.settings.v1';
 function read(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; } }
 let settings = read(settingsKey, { provider:'openai', providers:{}, server:'https://www.plantuml.com/plantuml', language:'es' });
-settings.providers ||= {}; settings.server ||= 'https://www.plantuml.com/plantuml';
+settings.providers ||= {}; settings.server ||= 'https://www.plantuml.com/plantuml'; settings.idleNudgeMinutes ||= 5;
 let state = read(storageKey, { type:'class', diagrams:{}, exercise:'' });
 state.diagrams ||= {}; state.exercise ||= ''; state.assistantOpen = state.assistantOpen === true; if (!['class','usecase','sequence'].includes(state.type)) state.type='class';
 let lang = settings.language === 'en' ? 'en' : 'es';
 let highlights = [], editingExercise = false, editingElement = null, renderTimer, renderVersion = 0, busy = false;
+let lastActivity = Date.now(), nudgeActive = false;
 const t = key => strings[lang][key] || key;
 const cardExpansion = new Map();
 let editingRelationship = null;
 let pendingReply = null, chatConnectionError = false, messageFrame;
+let serverDefaults = {};
+function serverDefault(provider) { return serverDefaults[provider] || {}; }
 function applyAssistantVisibility() {
   $('chatPanel').hidden = !state.assistantOpen;
   $('workspace').classList.toggle('assistant-hidden',!state.assistantOpen);
@@ -52,7 +67,7 @@ function applyAssistantVisibility() {
 }
 function setAssistantOpen(open) {
   const focusInChat = $('chatPanel').contains(document.activeElement);
-  state.assistantOpen = open; applyAssistantVisibility(); persist();
+  state.assistantOpen = open; applyAssistantVisibility(); persist(); checkIdleNudge();
   if (open) {
     $('messages').scrollTop = $('messages').scrollHeight;
     $('chatInput').focus({preventScroll:true});
@@ -67,7 +82,19 @@ $('chatPanel').addEventListener('keydown',event => {
 const templates = { class:'@startuml\n\n@enduml', usecase:'@startuml\nleft to right direction\n\n@enduml', sequence:'@startuml\n\n@enduml' };
 function current() { return state.diagrams[state.type] ||= { code:templates[state.type], messages:[] }; }
 function updateSaveStatus(saved = true) { const message=t(saved?'saved':'storageError'); $('saveStatus').textContent=t(saved?'savedCompact':'storageError'); $('saveStatus').title=message; $('saveStatus').classList.toggle('save-error',!saved); }
-function persist() { current().code = $('code').value; try { localStorage.setItem(storageKey,JSON.stringify(state)); updateSaveStatus(); } catch { updateSaveStatus(false); } }
+function persist() { current().code = $('code').value; lastActivity = Date.now(); checkIdleNudge(); try { localStorage.setItem(storageKey,JSON.stringify(state)); updateSaveStatus(); } catch { updateSaveStatus(false); } }
+// Cheap, deterministic signal for the idle nudge — no LLM call needed just to
+// decide whether the student has barely started relative to the exercise.
+function diagramIncomplete() { return state.exercise.trim().length > 200 && parseElements(state.type,$('code').value).length <= 1; }
+function checkIdleNudge() {
+  const idleMs = Math.max(1,Number(settings.idleNudgeMinutes) || 5) * 60000;
+  const shouldNudge = !state.assistantOpen && !busy && Date.now()-lastActivity >= idleMs && diagramIncomplete();
+  if (shouldNudge === nudgeActive) return;
+  nudgeActive = shouldNudge;
+  $('assistantToggle').dataset.nudge = String(shouldNudge);
+  $('assistantToggle').setAttribute('aria-label', shouldNudge ? t('idleNudgeAria') : t('openAssistant'));
+}
+setInterval(checkIdleNudge, 20000);
 function saveSettings() { try { localStorage.setItem(settingsKey,JSON.stringify(settings)); } catch { $('settingsError').textContent=t('storageError'); return false; } return true; }
 async function api(url, data, binary = false) { const response = await fetch(url,{method:'POST',headers:binary?{'Content-Type':'application/pdf'}:{'Content-Type':'application/json'},body:binary?data:JSON.stringify(data)}); const result = await response.json(); if (!response.ok) throw new Error(result.error || t('requestError')); return result; }
 function setLanguage() { applyAssistantVisibility(); $('language').setAttribute('aria-label',t('languageLabel')); $('settingsButton').setAttribute('aria-label',t('settings')); $('newDiagram').setAttribute('aria-label',t('new')); $('newDiagram').title=t('new'); document.documentElement.lang=lang; $('diagramImage').alt=lang==='es'?'Diagrama UML':'UML diagram'; $('chatInput').setAttribute('aria-label',t('chatPlaceholder')); $('exerciseInput').setAttribute('aria-label',t('exercise')); $('zoomIn').setAttribute('aria-label',t('zoomIn')); $('zoomOut').setAttribute('aria-label',t('zoomOut'));  $('language').value=lang; document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n)); document.querySelectorAll('[data-placeholder]').forEach(el=>el.placeholder=t(el.dataset.placeholder)); $('designerHint').textContent=t(state.type==='class'?'classDesignerHint':'designerHint'); $('editExercise').textContent=t(editingExercise?'done':'edit'); updateDesigner(); renderExercise(); renderMessages(); updateModel(); $('lines').textContent=$('code').value.split('\n').length+' '+t('lines'); if($('renderStatus').textContent) {renderVersion++;renderDiagram();} updateSaveStatus(); }
@@ -78,7 +105,7 @@ $('newDiagram').onclick=()=>{if(confirm(t('confirmNew'))){state.diagrams[state.t
 function setTab(preview) { $('preview').hidden=!preview; $('codeView').hidden=preview; $('zoomToolbar').hidden=!preview; if(preview) requestAnimationFrame(() => layoutDiagram()); $('previewTab').setAttribute('aria-selected',String(preview));$('codeTab').setAttribute('aria-selected',String(!preview)); }
 $('previewTab').onclick=()=>setTab(true);$('codeTab').onclick=()=>setTab(false);
 $('previewTab').onkeydown=$('codeTab').onkeydown=e=>{if(['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();const preview=e.currentTarget.id==='codeTab';setTab(preview);$(preview?'previewTab':'codeTab').focus();}};
-function updateCode(){persist();updateDesigner();$('lines').textContent=$('code').value.split('\n').length+' '+t('lines');clearTimeout(renderTimer);renderVersion++;renderTimer=setTimeout(renderDiagram,450);}
+function updateCode(){persist();updateDesigner();if(!editingExercise)renderExercise();$('lines').textContent=$('code').value.split('\n').length+' '+t('lines');clearTimeout(renderTimer);renderVersion++;renderTimer=setTimeout(renderDiagram,450);}
 $('code').oninput=updateCode;
 $('code').onkeydown=e=>{if(e.key==='Tab'){e.preventDefault();$('code').setRangeText('  ',$('code').selectionStart,$('code').selectionEnd,'end');updateCode();}};
 async function renderDiagram(){const version=renderVersion;const source=$('code').value;$('renderStatus').textContent=t('rendering');try {const {encoded}=await api('/api/encode',{code:source});if(version!==renderVersion)return;const base=settings.server.replace(/\/+$/,'');$('svgLink').href=`${base}/svg/${encoded}`;$('pngLink').href=`${base}/png/${encoded}`;const image=new Image();image.onload=()=>{if(version!==renderVersion)return;$('diagramImage').src=image.src;$('diagramImage').hidden=false; diagramView.width=image.naturalWidth; diagramView.height=image.naturalHeight; layoutDiagram(); $('previewEmpty').textContent='';$('renderStatus').textContent=t('rendered');};image.onerror=()=>{if(version!==renderVersion)return;$('diagramImage').hidden=true; updateZoomControls(); $('renderStatus').textContent=t('renderError');$('previewEmpty').textContent=t('renderError');};image.src=$('svgLink').href;}catch(error){if(version===renderVersion)$('renderStatus').textContent=error.message;}}
@@ -145,7 +172,6 @@ preview.addEventListener('keydown',event => {
 new ResizeObserver(() => layoutDiagram()).observe(preview);
 updateZoomControls();
 $('exportCode').onclick=()=>{const url=URL.createObjectURL(new Blob([$('code').value],{type:'text/plain;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=`${state.type}.puml`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
-function parseElements(){const lines=$('code').value.split('\n');const result=[];const kinds=state.type==='class'?'abstract class|class|interface|enum':state.type==='usecase'?'actor|usecase':'participant|actor|boundary|control|entity|database|collections|queue';const re=new RegExp(`^\\s*(${kinds})\\s+(?:"([^"\\n]+)"\\s+as\\s+([A-Za-z_]\\w*)|([A-Za-z_]\\w*))(\\s*\\{)?\\s*$`);for(let i=0;i<lines.length;i++){const m=lines[i].match(re);if(!m)continue;let end=i;if(m[5]){end=lines.findIndex((line,j)=>j>i&&/^\s*}\s*$/.test(line));if(end<0)continue;}result.push({kind:m[1],name:m[2]||m[4],id:m[3]||m[4],start:i,end,members:lines.slice(i+1,end).join('\n').replace(/^  /gm,'')});i=end;}return result;}
 const kindOptions={class:[['class','class'],['abstract class','abstract class'],['interface','interface'],['enum','enum']],usecase:[['actor','actor'],['usecase','usecase']],sequence:['participant','actor','boundary','control','entity','database','collections','queue'].map(x=>[x,x])};
 const relations={class:[['-->','Asociación','Association'],['--|>','Herencia','Inheritance'],['..|>','Implementación','Realisation'],['*--','Composición','Composition'],['o--','Agregación','Aggregation'],['..>','Dependencia','Dependency'],['--','Asociación sin dirección','Undirected association'],['<-->','Asociación bidireccional','Bidirectional association']],usecase:[['-->','Asociación','Association'],['..>','Include','Include'],['..>','Extend','Extend'],['--|>','Generalización','Generalisation'],['..>','Dependencia','Dependency'],['--','Asociación sin dirección','Undirected association'],['<-->','Asociación bidireccional','Bidirectional association']],sequence:[['->','Mensaje síncrono','Synchronous message'],['->>','Mensaje asíncrono','Asynchronous message'],['-->','Respuesta','Return message'],['->x','Mensaje perdido','Lost message'],['-->>','Respuesta asíncrona','Asynchronous return']]};
 function option(value,label){const el=document.createElement('option');el.value=value;el.textContent=label;return el;}
@@ -167,7 +193,14 @@ function makeDesignerCard(key, title, subtitle, content, onEdit, onDelete) {
   if(collapsible) { const body = document.createElement('div'); body.className = 'element-body'; body.append(content); card.append(body); }
   return card;
 }
-function appendElementCards(target, items, emptyKey) {
+function appendWarningBadge(card, message) {
+  const badge = document.createElement('span');
+  badge.className = 'diagram-warning'; badge.textContent = '!'; badge.title = message;
+  badge.setAttribute('role','img'); badge.setAttribute('aria-label',message);
+  const head = card.querySelector('.element-head');
+  head.insertBefore(badge, head.querySelector('.element-actions'));
+}
+function appendElementCards(target, items, emptyKey, issues = []) {
   target.replaceChildren();
   if (!items.length) { const p=document.createElement('p'); p.className='hint'; p.textContent=t(emptyKey); target.append(p); }
   for (const item of items) {
@@ -180,11 +213,15 @@ function appendElementCards(target, items, emptyKey) {
       const label=document.createElement('dt'), value=document.createElement('dd');
       label.textContent=t('elementIdentifier'); value.textContent=item.id; body.append(label,value);
     }
-    target.append(makeDesignerCard(`${state.type}:${item.id}`,item.name,kindLabel(item.kind)+(state.type==='class'&&item.name!==item.id?' · '+item.id:''),body,()=>openElement(item),()=>deleteElement(item)));
+    const card=makeDesignerCard(`${state.type}:${item.id}`,item.name,kindLabel(item.kind)+(state.type==='class'&&item.name!==item.id?' · '+item.id:''),body,()=>openElement(item),()=>deleteElement(item));
+    card.dataset.elementId=item.id;
+    const issue=issues.find(i=>i.target==='element'&&i.id===item.id);
+    if (issue) appendWarningBadge(card,t(issue.code));
+    target.append(card);
   }
 }
 function updateDesigner() {
-  const isClass=state.type==='class', isUseCase=state.type==='usecase', isSequence=state.type==='sequence', elements=parseElements();
+  const isClass=state.type==='class', isUseCase=state.type==='usecase', isSequence=state.type==='sequence', elements=parseElements(state.type,$('code').value);
   $('designerHint').textContent=t(isClass?'classDesignerHint':isUseCase?'useCaseDesignerHint':'sequenceDesignerHint');
   $('classGroup').hidden=false; $('relationshipGroup').hidden=false; $('useCaseGroup').hidden=!isUseCase;
   $('elementGroupTitle').textContent=t(isClass?'class':isUseCase?'actors':'participants');
@@ -194,8 +231,10 @@ function updateDesigner() {
   const primary=isUseCase?elements.filter(item=>item.kind==='actor'):elements;
   const useCases=isUseCase?elements.filter(item=>item.kind==='usecase'):[];
   $('classCount').textContent=primary.length; $('useCaseCount').textContent=useCases.length;
-  appendElementCards($('elements'),primary,isClass?'emptyElements':isUseCase?'emptyActors':'emptyParticipants');
-  appendElementCards($('useCaseList'),useCases,'emptyUseCases');
+  const parsedRelations=parseDiagramRelations(state.type,$('code').value,elements);
+  const issues=checkDiagram(state.type,elements,parsedRelations);
+  appendElementCards($('elements'),primary,isClass?'emptyElements':isUseCase?'emptyActors':'emptyParticipants',issues);
+  appendElementCards($('useCaseList'),useCases,'emptyUseCases',issues);
   $('relationLabel').previousElementSibling.textContent=t(isSequence?'messageLabel':'relationshipLabel');
   for (const id of ['from','to','activationTarget']) {
     const select=$(id), prior=select.value; select.replaceChildren(...elements.map(el=>option(el.id,el.name)));
@@ -209,7 +248,24 @@ function updateDesigner() {
   $('activate').disabled=$('deactivate').disabled=!elements.length;
   $('sequenceError').textContent='';
   $('newRelationship').disabled=!elements.length;
-  refreshRelationshipList(elements);
+  refreshRelationshipList(elements,parsedRelations,issues);
+  renderProcedureStep(elements,parsedRelations);
+}
+function renderProcedureStep(elements, parsedRelations) {
+  const steps=stepList(state.type);
+  const detected=detectStep(state.type,elements,parsedRelations,$('code').value);
+  const override=current().stepOverride;
+  const select=$('procedureStepSelect');
+  select.replaceChildren(option('',t('procedureStepAuto')+' · '+(steps.indexOf(detected)+1)+'. '+t(`step_${state.type}_${detected}`)));
+  steps.forEach((id,i)=>select.append(option(id,(i+1)+'. '+t(`step_${state.type}_${id}`))));
+  select.value=steps.includes(override)?override:'';
+}
+$('procedureStepSelect').onchange=()=>{ current().stepOverride=$('procedureStepSelect').value||null; persist(); };
+function activeProcedureStep() {
+  const code=$('code').value, elements=parseElements(state.type,code);
+  const relations=parseDiagramRelations(state.type,code,elements);
+  const steps=stepList(state.type), override=current().stepOverride;
+  return steps.includes(override)?override:detectStep(state.type,elements,relations,code);
 }
 function relationshipIndex(item) {
   if(state.type==='usecase') {
@@ -220,8 +276,8 @@ function relationshipIndex(item) {
   }
   return Math.max(0,relations[state.type].findIndex(r=>r[0]===item.arrow));
 }
-function refreshRelationshipList(elements) {
-  const list=$('relationshipList'), items=parseDiagramRelations(state.type,$('code').value,elements), names=new Map(elements.map(item=>[item.id,item.name]));
+function refreshRelationshipList(elements, parsedRelations, issues) {
+  const list=$('relationshipList'), items=parsedRelations, names=new Map(elements.map(item=>[item.id,item.name]));
   $('relationshipCount').textContent=items.length; list.replaceChildren();
   if(!items.length) { const p=document.createElement('p'); p.className='hint'; p.textContent=t(state.type==='sequence'?'emptyMessages':'emptyRelationships'); list.append(p); }
   const occurrences=new Map();
@@ -231,7 +287,10 @@ function refreshRelationshipList(elements) {
     const card=makeDesignerCard(`${state.type}:relationship:${item.raw}:${occurrence}`,title,kind[lang==='es'?1:2],null,()=>openRelationship(item),()=>deleteRelationship(item));
     card.classList.add('relationship-card');
     const label=document.createElement('span'); label.className='relationship-label'; label.textContent=item.label||t('noLabel');
-    card.querySelector('.card-title').prepend(label); list.append(card);
+    card.querySelector('.card-title').prepend(label);
+    const issue=issues.find(i=>i.target==='relation'&&i.start===item.start);
+    if (issue) appendWarningBadge(card,t(issue.code));
+    list.append(card);
   }
 }
 function openRelationship(item) {
@@ -329,7 +388,7 @@ $('elementForm').onsubmit = e => {
   e.preventDefault();
   const id = $('elementId').value.trim(), name = $('elementName').value.trim();
   if (!/^[A-Za-z_]\w*$/.test(id) || !name) { $('elementError').textContent = t('invalid'); return; }
-  if (parseElements().some(item => item.id === id && item.id !== editingElement?.id)) { $('elementError').textContent = t('duplicate'); return; }
+  if (parseElements(state.type,$('code').value).some(item => item.id === id && item.id !== editingElement?.id)) { $('elementError').textContent = t('duplicate'); return; }
   let members = '';
   try {
     if (state.type === 'class') members = serializeClassMembers({ attributes:readMemberRows('attributeRows'), methods:readMemberRows('methodRows'), extra:$('extraMembers').value });
@@ -373,7 +432,30 @@ for(const id of ['activate','deactivate']) $(id).onclick=()=>{
   if($('activationTarget').value) insert(id+' '+$('activationTarget').value);
   else $('sequenceError').textContent=t('emptySequenceTarget');
 };
-function renderExercise(){const target=$('exerciseHtml');target.replaceChildren();if(!state.exercise.trim()){const p=document.createElement('p');p.className='hint';p.textContent=t('emptyExercise');target.append(p);return;}const text=state.exercise;const ranges=[];for(const h of highlights){let at=0;while((at=text.indexOf(h.quote,at))!==-1){ranges.push({...h,start:at,end:at+h.quote.length});at+=h.quote.length;if(ranges.length>=300)break;}if(ranges.length>=300)break;}ranges.sort((a,b)=>a.start-b.start||b.end-a.end);const p=document.createElement('p');let cursor=0;for(const r of ranges){if(r.start<cursor)continue;p.append(document.createTextNode(text.slice(cursor,r.start)));const mark=document.createElement('mark');mark.className=r.category;mark.textContent=text.slice(r.start,r.end);mark.title=r.reason;p.append(mark);cursor=r.end;}p.append(document.createTextNode(text.slice(cursor)));target.append(p);}
+function renderExercise(){
+  const target=$('exerciseHtml');target.replaceChildren();
+  if(!state.exercise.trim()){const p=document.createElement('p');p.className='hint';p.textContent=t('emptyExercise');target.append(p);return;}
+  const text=state.exercise;
+  // Cross-reference against the current diagram so a highlight already
+  // represented by a class/actor/use case/participant or a relationship
+  // label isn't flagged, regardless of which category the tutor gave it.
+  const diagramElements=parseElements(state.type,$('code').value);
+  const diagramRelations=parseDiagramRelations(state.type,$('code').value,diagramElements);
+  const uncoveredQuotes=new Set(uncoveredHighlights(highlights,diagramElements,diagramRelations).map(h=>h.quote));
+  const ranges=[];for(const h of highlights){let at=0;while((at=text.indexOf(h.quote,at))!==-1){ranges.push({...h,start:at,end:at+h.quote.length});at+=h.quote.length;if(ranges.length>=300)break;}if(ranges.length>=300)break;}
+  ranges.sort((a,b)=>a.start-b.start||b.end-a.end);
+  const p=document.createElement('p');let cursor=0;
+  for(const r of ranges){
+    if(r.start<cursor)continue;
+    p.append(document.createTextNode(text.slice(cursor,r.start)));
+    const mark=document.createElement('mark');mark.className=r.category;mark.textContent=text.slice(r.start,r.end);
+    const isUncovered=uncoveredQuotes.has(r.quote);
+    if(isUncovered)mark.classList.add('uncovered');
+    mark.title=isUncovered?r.reason+' · '+t('uncoveredHint'):r.reason;
+    p.append(mark);cursor=r.end;
+  }
+  p.append(document.createTextNode(text.slice(cursor)));target.append(p);
+}
 $('editExercise').onclick=()=>{editingExercise=!editingExercise;$('exerciseInput').hidden=!editingExercise;$('exerciseHtml').hidden=editingExercise;$('editExercise').textContent=t(editingExercise?'done':'edit');if(editingExercise){$('exerciseInput').value=state.exercise;$('exerciseInput').focus();}else renderExercise();};
 $('exerciseInput').oninput=()=>{state.exercise=$('exerciseInput').value;highlights=[];persist();};
 $('clearHighlights').onclick=()=>{highlights=[];renderExercise();};
@@ -397,15 +479,34 @@ function renderMessages(){
       if(!m.content){bubble.textContent=t('thinking');bubble.classList.add('thinking');}
     }
     if(m.highlights?.length){const b=document.createElement('button');b.textContent=t('showHighlights');b.disabled=m.exercise!==state.exercise;b.onclick=()=>{highlights=m.highlights;renderExercise();};item.append(b);}
+    if(m.diagramHighlights?.length){const b=document.createElement('button');b.textContent=t('showDiagramHighlights');b.disabled=m.diagramType!==state.type||m.code!==$('code').value;b.onclick=()=>pointOutElements(m.diagramHighlights);item.append(b);}
     target.append(item);
   }
   target.scrollTop=atBottom?target.scrollHeight:scrollTop;
 }
+// A temporary, passive visual anchor — not a modal or auto-scroll takeover —
+// so pointing at a cited element never pulls focus away from what the
+// student was doing in the Designer.
+function pointOutElements(citations) {
+  const designer=document.querySelector('.designer');
+  let first=true;
+  for (const {element,reason} of citations) {
+    const card=designer.querySelector(`[data-element-id="${CSS.escape(element)}"]`);
+    if (!card) continue;
+    if (card.tagName==='DETAILS') card.open=true;
+    card.classList.add('cited');
+    const previousTitle=card.title;
+    if (reason) card.title=reason;
+    if (first) { card.scrollIntoView({behavior:'smooth',block:'center'}); first=false; }
+    setTimeout(()=>{ card.classList.remove('cited'); card.title=previousTitle; },4000);
+  }
+}
 function chatConfigured(){
   const profile=settings.providers[settings.provider];
-  if(!profile?.model?.trim())return false;
+  const fallback=serverDefault(settings.provider);
+  if(!(profile?.model?.trim() || fallback.model))return false;
   if(settings.provider==='compatible')return validUrl(profile.endpoint);
-  return ['openai','anthropic','gemini'].includes(settings.provider)&&!!profile.apiKey?.trim();
+  return ['openai','anthropic','gemini'].includes(settings.provider)&&!!(profile.apiKey?.trim() || fallback.key);
 }
 function updateModel(){
   const profile=settings.providers[settings.provider];
@@ -447,7 +548,7 @@ async function streamChat(data,onText){
 }
 $('chatForm').onsubmit=async e=>{
   e.preventDefault();if(busy)return;
-  const profile=settings.providers[settings.provider];
+  const profile=settings.providers[settings.provider]||{};
   if(!chatConfigured()){$('chatError').textContent=t('keyRequired');openSettings();return;}
   const question=$('chatInput').value.trim();if(!question)return;
   $('chatError').textContent='';chatConnectionError=false;
@@ -459,11 +560,11 @@ $('chatForm').onsubmit=async e=>{
   $('chatInput').value='';pendingReply={role:'assistant',content:''};setBusy(true);
   $('messages').scrollTop=$('messages').scrollHeight;
   try{
-    const result=await streamChat({provider:settings.provider,model:profile.model,apiKey:profile.apiKey||'',endpoint:profile.endpoint,exercise,code:$('code').value,diagramType:state.type,messages:[...history,{role:'user',content:question}]},text=>{
+    const result=await streamChat({provider:settings.provider,model:profile.model||serverDefault(settings.provider).model||'',apiKey:profile.apiKey||'',endpoint:profile.endpoint,exercise,code:$('code').value,diagramType:state.type,procedureStep:activeProcedureStep(),messages:[...history,{role:'user',content:question}]},text=>{
       pendingReply.content=text;
       if(!messageFrame)messageFrame=requestAnimationFrame(()=>{messageFrame=null;renderMessages();updateModel();});
     });
-    workspace.messages.push({role:'assistant',content:result.message,highlights:result.highlights,exercise});
+    workspace.messages.push({role:'assistant',content:result.message,highlights:result.highlights,exercise,diagramHighlights:result.diagramHighlights,diagramType:state.type,code:$('code').value});
     if(exercise===state.exercise){highlights=result.highlights;renderExercise();}else $('chatError').textContent=t('fileChanged');
     pendingReply=null;persist();
   }catch(error){
@@ -529,6 +630,7 @@ function openSettings() {
   settingsDraft = structuredClone(settings.providers);
   $('provider').value = settings.provider;
   $('plantumlServer').value = settings.server;
+  $('idleNudgeMinutes').value = settings.idleNudgeMinutes;
   $('settingsError').textContent = '';
   loadProfile(settings.provider);
   $('settingsDialog').showModal();
@@ -568,7 +670,7 @@ $('modelSelect').onchange = () => {
 $('loadModels').onclick = async () => {
   rememberDraft();
   const provider = draftProvider, profile = settingsDraft[provider];
-  if (provider !== 'compatible' && !profile.apiKey) { modelStatus('modelsKeyRequired',true); $('apiKey').focus(); return; }
+  if (provider !== 'compatible' && !profile.apiKey && !serverDefault(provider).key) { modelStatus('modelsKeyRequired',true); $('apiKey').focus(); return; }
   if (provider === 'compatible' && !validUrl(profile.endpoint)) { modelStatus('serverInvalid',true); $('endpoint').focus(); return; }
   cancelModelRequest();
   const controller = new AbortController(); modelRequest = controller;
@@ -600,8 +702,9 @@ $('settingsForm').onsubmit = e => {
     // Opening a collapsed invalid renderer field must still allow correction.
     settings.providers=settingsDraft; settings.provider=$('provider').value;
     settings.server=$('plantumlServer').value.trim().replace(/\/+$/,'');
+    settings.idleNudgeMinutes=Math.min(120,Math.max(1,Math.round(Number($('idleNudgeMinutes').value)) || 5));
     if (!saveSettings()) return;
-    $('settingsDialog').close(); chatConnectionError=false; updateModel(); renderVersion++; renderDiagram();
+    $('settingsDialog').close(); chatConnectionError=false; updateModel(); checkIdleNudge(); renderVersion++; renderDiagram();
   } catch(error) { $('settingsError').textContent=error.message; }
 };
 $('plantumlServer').addEventListener('invalid',() => { $('plantumlServer').closest('details').open=true; });
@@ -612,4 +715,11 @@ $('forgetKeys').onclick = () => {
   if (saveSettings()) $('settingsError').textContent=t('keyForgotten');
   chatConnectionError=false;updateModel();
 };
+(async () => {
+  try {
+    const response = await fetch('/api/config');
+    if (response.ok) serverDefaults = (await response.json()).defaults || {};
+    updateModel();
+  } catch {}
+})();
 setLanguage();loadDiagram();

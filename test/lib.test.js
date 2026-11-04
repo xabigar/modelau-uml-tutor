@@ -11,7 +11,17 @@ test('PlantUML encoding round trips UTF-8 and aligns with the PlantUML alphabet'
 test('tutor highlights only exact exercise quotes and known categories',()=>{
  const result=parseTutorReply(JSON.stringify({message:'¿Quién inicia la petición?',highlights:[{quote:'El usuario',category:'actor',reason:'Inicia la interacción'},{quote:'inventado',category:'actor',reason:'No existe'},{quote:'usuario',category:'script',reason:'No válida'}]}),'El usuario pide un préstamo.');
  assert.equal(result.highlights.length,1);assert.equal(result.highlights[0].quote,'El usuario');
- assert.deepEqual(parseTutorReply('plain response',''),{message:'plain response',highlights:[]});
+ assert.deepEqual(parseTutorReply('plain response',''),{message:'plain response',highlights:[],diagramHighlights:[]});
+});
+test('diagram citations resolve to a real element id and drop invented ones',()=>{
+ const elements=[{id:'Socio',name:'Socio'},{id:'Pedido',name:'Pedido grande'}];
+ const result=parseTutorReply(JSON.stringify({message:'¿Qué atributos tiene Socio?',diagramHighlights:[
+  {element:'Socio',reason:'Le falta un atributo clave'},
+  {element:'Pedido grande',reason:'Revisa su multiplicidad'},
+  {element:'Inventada',reason:'No existe en el diagrama'},
+  {element:'Socio',reason:''}
+ ]}),'',elements);
+ assert.deepEqual(result.diagramHighlights,[{element:'Socio',reason:'Le falta un atributo clave'},{element:'Pedido',reason:'Revisa su multiplicidad'}]);
 });
 test('provider adapters place system instructions and credentials correctly',()=>{
  const messages=[{role:'user',content:'Ayúdame'}];

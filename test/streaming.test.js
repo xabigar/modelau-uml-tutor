@@ -60,5 +60,5 @@ test('streams reject provider errors, truncation and a disconnected stream witho
 test('compatible non-streaming responses still work and strip invalid highlights',async()=>{
   const res=new Response(JSON.stringify({choices:[{message:{content:reply}}]}),{headers:{'Content-Type':'application/json'}});
   const output=await Array.fromAsync(streamTutorReply('compatible',res,''));
-  assert.deepEqual(output,[{type:'done',message:JSON.parse(reply).message,highlights:[]}]);
+  assert.deepEqual(output,[{type:'done',message:JSON.parse(reply).message,highlights:[],diagramHighlights:[]}]);
 });

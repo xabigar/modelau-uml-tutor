@@ -1,0 +1,9 @@
+services:
+  modelau:
+    build: .
+    container_name: modelau
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3005:3000"
+    env_file:
+      - .env

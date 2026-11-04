@@ -14,16 +14,24 @@ export function encodePlantUML(source) {
   }
   return encoded;
 }
-export function parseTutorReply(text, exercise) {
+export function parseTutorReply(text, exercise, diagramElements = []) {
   let parsed;
   try { parsed = JSON.parse(text.replace(/^\s*```(?:json)?\s*/, '').replace(/\s*```\s*$/, '')); }
-  catch { return { message: text, highlights: [] }; }
+  catch { return { message: text, highlights: [], diagramHighlights: [] }; }
   if (typeof parsed.message !== 'string' || !parsed.message.trim()) throw new Error('El modelo no devolvió una respuesta válida.');
   const highlights = (Array.isArray(parsed.highlights) ? parsed.highlights : []).filter(h =>
     h && typeof h.quote === 'string' && h.quote.trim() && exercise.includes(h.quote) &&
     ['requirement', 'actor', 'ambiguity'].includes(h.category) && typeof h.reason === 'string'
   ).slice(0, 6);
-  return { message: parsed.message.slice(0, 24000), highlights };
+  // Citations must name a real element from the student's own diagram — never
+  // an invented one — so the server resolves each to its stable identifier.
+  const byNameOrId = new Map(diagramElements.flatMap(e => [[e.id, e.id], [e.name, e.id]]));
+  const diagramHighlights = (Array.isArray(parsed.diagramHighlights) ? parsed.diagramHighlights : [])
+    .filter(d => d && typeof d.element === 'string' && typeof d.reason === 'string' && d.reason.trim())
+    .map(d => ({ element: byNameOrId.get(d.element), reason: d.reason.trim() }))
+    .filter(d => d.element)
+    .slice(0, 3);
+  return { message: parsed.message.slice(0, 24000), highlights, diagramHighlights };
 }
 export function buildRequest(provider, model, key, system, messages, endpoint) {
   if (provider === 'compatible') {
