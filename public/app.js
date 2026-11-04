@@ -26,6 +26,8 @@ Object.assign(strings.en, {
 });
 Object.assign(strings.es, { newShort:'Nuevo', savedCompact:'Guardado', languageLabel:'Idioma' });
 Object.assign(strings.en, { newShort:'New', savedCompact:'Saved', languageLabel:'Language' });
+Object.assign(strings.es, { serverDefault:'Servidor (por defecto)', serverDefaultLocked:'Clave del servidor bloqueada. Introduce la contraseña para usarla.', serverDefaultUnlocked:'Clave del servidor desbloqueada.', serverDefaultPasswordLabel:'Contraseña de administrador', serverDefaultUnlock:'Desbloquear', serverDefaultPasswordPlaceholder:'Contraseña del servidor', serverDefaultHint:'Usa la clave API configurada en el servidor.', serverDefaultPasswordRequired:'Introduce la contraseña.', serverDefaultWrongPassword:'Contraseña incorrecta.' });
+Object.assign(strings.en, { serverDefault:'Server default', serverDefaultLocked:'Server key is locked. Enter the password to use it.', serverDefaultUnlocked:'Server key unlocked.', serverDefaultPasswordLabel:'Admin password', serverDefaultUnlock:'Unlock', serverDefaultPasswordPlaceholder:'Server password', serverDefaultHint:'Uses the API key configured on the server.', serverDefaultPasswordRequired:'Enter the password.', serverDefaultWrongPassword:'Incorrect password.' });
 Object.assign(strings.es, { actors:'Actores', participants:'Participantes', messages:'Mensajes', newActor:'Nuevo actor', newActorButton:'+ Nuevo actor', newUseCase:'Nuevo caso de uso', newUseCaseButton:'+ Nuevo caso de uso', newParticipant:'Nuevo participante', newParticipantButton:'+ Nuevo participante', newMessageButton:'+ Nuevo mensaje', editMessage:'Editar mensaje', confirmDeleteMessage:'¿Eliminar este mensaje?', emptyActors:'Todavía no hay actores. Crea el primero.', emptyUseCases:'Todavía no hay casos de uso. Crea el primero.', emptyParticipants:'Todavía no hay participantes. Crea el primero.', emptyMessages:'Todavía no hay mensajes. Conecta tus participantes con el primero.', actorKind:'Actor', useCaseKind:'Caso de uso', participantKind:'Participante', boundaryKind:'Interfaz (boundary)', controlKind:'Control', entityKind:'Entidad', databaseKind:'Base de datos', collectionsKind:'Colecciones', queueKind:'Cola', useCaseDesignerHint:'Crea actores, casos de uso y relaciones. Puedes plegar los bloques y sus tarjetas.', sequenceDesignerHint:'Crea participantes y mensajes. Los mensajes siguen el orden del código; los fragmentos avanzados siguen disponibles en él.', elementIdentifier:'Identificador', messageLabel:'Mensaje', relationshipLabel:'Etiqueta', emptySequenceTarget:'Crea un participante antes de activar su línea de vida.' });
 Object.assign(strings.en, { actors:'Actors', participants:'Participants', messages:'Messages', newActor:'New actor', newActorButton:'+ New actor', newUseCase:'New use case', newUseCaseButton:'+ New use case', newParticipant:'New participant', newParticipantButton:'+ New participant', newMessageButton:'+ New message', editMessage:'Edit message', confirmDeleteMessage:'Delete this message?', emptyActors:'No actors yet. Create your first one.', emptyUseCases:'No use cases yet. Create your first one.', emptyParticipants:'No participants yet. Create your first one.', emptyMessages:'No messages yet. Connect your participants with the first one.', actorKind:'Actor', useCaseKind:'Use case', participantKind:'Participant', boundaryKind:'Boundary', controlKind:'Control', entityKind:'Entity', databaseKind:'Database', collectionsKind:'Collections', queueKind:'Queue', useCaseDesignerHint:'Create actors, use cases and relationships. Collapse the groups or their cards to keep the workspace tidy.', sequenceDesignerHint:'Create participants and messages. Messages follow the order of your code; advanced fragments remain editable there.', elementIdentifier:'Identifier', messageLabel:'Message', relationshipLabel:'Label', emptySequenceTarget:'Create a participant before activating its lifeline.' });
 Object.assign(strings.es, {emptyRelationships:'Todavía no hay relaciones. Crea una para conectar tus elementos.',relationRequired:'Escribe el texto del mensaje.'});
@@ -54,7 +56,24 @@ const cardExpansion = new Map();
 let editingRelationship = null;
 let pendingReply = null, chatConnectionError = false, messageFrame;
 let serverDefaults = {};
-function serverDefault(provider) { return serverDefaults[provider] || {}; }
+function isServerDefaultUnlocked() {
+  const token = settings.serverDefaultToken;
+  if (!token || !token.includes('.')) return false;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[0]));
+    return payload.type === 'server-default' && typeof payload.exp === 'number' && payload.exp > Date.now();
+  } catch { return false; }
+}
+function serverDefaultModel() {
+  return (settings.providers.server && settings.providers.server.model) || serverDefaults.openai?.model || '';
+}
+function updateServerDefaultStatus() {
+  const unlocked = isServerDefaultUnlocked();
+  const status = $('serverDefaultStatus');
+  if (status) status.textContent = t(unlocked ? 'serverDefaultUnlocked' : 'serverDefaultLocked');
+  const lockRow = $('serverDefaultLockRow');
+  if (lockRow) lockRow.hidden = unlocked;
+}
 function applyAssistantVisibility() {
   $('chatPanel').hidden = !state.assistantOpen;
   $('workspace').classList.toggle('assistant-hidden',!state.assistantOpen);
@@ -503,10 +522,10 @@ function pointOutElements(citations) {
 }
 function chatConfigured(){
   const profile=settings.providers[settings.provider];
-  const fallback=serverDefault(settings.provider);
-  if(!(profile?.model?.trim() || fallback.model))return false;
+  if(settings.provider==='server')return !!profile?.model?.trim() && isServerDefaultUnlocked();
+  if(!profile?.model?.trim())return false;
   if(settings.provider==='compatible')return validUrl(profile.endpoint);
-  return ['openai','anthropic','gemini'].includes(settings.provider)&&!!(profile.apiKey?.trim() || fallback.key);
+  return ['openai','anthropic','gemini'].includes(settings.provider)&&!!profile.apiKey?.trim();
 }
 function updateModel(){
   const profile=settings.providers[settings.provider];
@@ -514,7 +533,8 @@ function updateModel(){
   const status=busy?'busy':chatConnectionError?'error':ready?'ready':'unconfigured';
   const text=t(busy?(pendingReply?.content?'responding':'thinking'):chatConnectionError?'chatConnectionError':ready?'chatReady':'chatNotReady');
   $('connectionStatus').textContent=text;
-  $('modelStatus').textContent=profile?.model?`${settings.provider} · ${profile.model}`:t('noModel');
+  const shownModel=profile?.model?.trim() || (settings.provider==='server' ? (serverDefaults.openai?.model||'') : '');
+  $('modelStatus').textContent=shownModel?`${settings.provider==='server'?'openai':settings.provider} · ${shownModel}`:t('noModel');
   $('assistantConnection').dataset.state=status;
   $('assistantConnection').title=t(busy?'sendingHint':chatConnectionError?'chatConnectionError':ready?'readyHint':'keyRequired');
   $('assistantToggle').dataset.connection=status;
@@ -560,7 +580,8 @@ $('chatForm').onsubmit=async e=>{
   $('chatInput').value='';pendingReply={role:'assistant',content:''};setBusy(true);
   $('messages').scrollTop=$('messages').scrollHeight;
   try{
-    const result=await streamChat({provider:settings.provider,model:profile.model||serverDefault(settings.provider).model||'',apiKey:profile.apiKey||'',endpoint:profile.endpoint,exercise,code:$('code').value,diagramType:state.type,procedureStep:activeProcedureStep(),messages:[...history,{role:'user',content:question}]},text=>{
+    const isServer=settings.provider==='server';
+    const result=await streamChat({provider:isServer?'openai':settings.provider,model:profile.model||(isServer?(serverDefaults.openai?.model||''):''),apiKey:isServer?'':(profile.apiKey||''),serverDefaultToken:isServer?settings.serverDefaultToken:undefined,endpoint:isServer?undefined:profile.endpoint,exercise,code:$('code').value,diagramType:state.type,procedureStep:activeProcedureStep(),messages:[...history,{role:'user',content:question}]},text=>{
       pendingReply.content=text;
       if(!messageFrame)messageFrame=requestAnimationFrame(()=>{messageFrame=null;renderMessages();updateModel();});
     });
@@ -613,15 +634,20 @@ function populateModels() {
 function loadProfile(provider) {
   cancelModelRequest(); draftProvider = provider;
   const profile = settingsDraft[provider] || {};
+  const isServer = provider === 'server';
+  if (isServer && !profile.model && serverDefaults.openai?.model) profile.model = serverDefaults.openai.model;
   $('model').value = profile.model || '';
-  $('apiKey').value = profile.apiKey || '';
+  $('apiKey').value = isServer ? '' : (profile.apiKey || '');
   $('apiKey').type = 'password';
   $('toggleKey').textContent = t('showKey');
   $('toggleKey').setAttribute('aria-pressed','false');
-  $('endpoint').value = profile.endpoint || '';
+  $('endpoint').value = isServer ? '' : (profile.endpoint || '');
   $('endpointLabel').hidden = provider !== 'compatible';
   $('endpoint').required = provider === 'compatible';
-  $('keyHelp').textContent = t(provider === 'compatible' ? 'localKeyHint' : 'modelsKeyHint');
+  $('apiKeyLabel').hidden = isServer;
+  $('serverDefaultSection').hidden = !isServer;
+  if (isServer) updateServerDefaultStatus();
+  $('keyHelp').textContent = t(isServer ? 'serverDefaultHint' : (provider === 'compatible' ? 'localKeyHint' : 'modelsKeyHint'));
   $('modelSearch').value = '';
   populateModels();
   modelStatus(profile.models?.length ? 'modelsCached' : 'modelsReady',false,profile.models?.length ? ' ('+profile.models.length+')' : '');
@@ -658,6 +684,25 @@ $('toggleKey').onclick = () => {
   $('toggleKey').textContent = t(show ? 'hideKey' : 'showKey');
   $('toggleKey').setAttribute('aria-pressed',String(show));
 };
+$('unlockServerDefault').onclick = async () => {
+  const password = $('serverDefaultPassword').value;
+  if (!password) { $('serverDefaultError').textContent = t('serverDefaultPasswordRequired'); return; }
+  $('serverDefaultError').textContent = '';
+  $('unlockServerDefault').disabled = true;
+  try {
+    const response = await fetch('/api/server-default/unlock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})});
+    const result = await response.json();
+    if (!response.ok) { $('serverDefaultError').textContent = result.error || t('serverDefaultWrongPassword'); return; }
+    settings.serverDefaultToken = result.token;
+    saveSettings();
+    $('serverDefaultPassword').value = '';
+    updateServerDefaultStatus();
+  } catch {
+    $('serverDefaultError').textContent = t('requestError');
+  } finally {
+    $('unlockServerDefault').disabled = false;
+  }
+};
 $('modelSearch').oninput = populateModels;
 $('modelSelect').onchange = () => {
   const manual = $('modelSelect').value === '__manual__';
@@ -670,7 +715,9 @@ $('modelSelect').onchange = () => {
 $('loadModels').onclick = async () => {
   rememberDraft();
   const provider = draftProvider, profile = settingsDraft[provider];
-  if (provider !== 'compatible' && !profile.apiKey && !serverDefault(provider).key) { modelStatus('modelsKeyRequired',true); $('apiKey').focus(); return; }
+  const isServer = provider === 'server';
+  if (isServer && !isServerDefaultUnlocked()) { modelStatus('serverDefaultLocked',true); return; }
+  if (!isServer && provider !== 'compatible' && !profile.apiKey) { modelStatus('modelsKeyRequired',true); $('apiKey').focus(); return; }
   if (provider === 'compatible' && !validUrl(profile.endpoint)) { modelStatus('serverInvalid',true); $('endpoint').focus(); return; }
   cancelModelRequest();
   const controller = new AbortController(); modelRequest = controller;
@@ -679,7 +726,8 @@ $('loadModels').onclick = async () => {
   $('modelSettings').setAttribute('aria-busy','true');
   modelStatus('modelsLoading');
   try {
-    const response = await fetch('/api/models',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({provider,apiKey:profile.apiKey,endpoint:profile.endpoint}),signal:controller.signal});
+    const body = isServer ? { provider:'openai', apiKey:'', serverDefaultToken:settings.serverDefaultToken } : { provider, apiKey:profile.apiKey, endpoint:profile.endpoint };
+    const response = await fetch('/api/models',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:controller.signal});
     const result = await response.json();
     if (modelRequest !== controller) return;
     if (!response.ok) { modelStatus(result.code && strings[lang][result.code] ? result.code : 'modelsNetworkError',true); return; }

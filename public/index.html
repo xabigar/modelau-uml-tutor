@@ -91,9 +91,18 @@
     <p class="hint settings-intro" data-i18n="settingsIntro">Conecta un proveedor y elige el modelo para UMLBuddy.</p>
     <fieldset class="settings-group">
       <legend data-i18n="connection">Conexión</legend>
-      <label><span data-i18n="provider">Proveedor</span><select id="provider"><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option><option value="gemini">Google Gemini</option><option value="compatible">OpenAI compatible</option></select></label>
+      <label><span data-i18n="provider">Proveedor</span><select id="provider"><option value="openai">OpenAI</option><option value="server" data-i18n="serverDefault">Servidor (por defecto)</option><option value="anthropic">Anthropic</option><option value="gemini">Google Gemini</option><option value="compatible">OpenAI compatible</option></select></label>
       <label id="endpointLabel" hidden><span data-i18n="endpoint">URL base compatible (incluye /v1)</span><input id="endpoint" type="url" placeholder="http://localhost:11434/v1"><small data-i18n="endpointNote">La clave y el contexto se enviarán a esta dirección.</small></label>
-      <label><span>API key</span><span class="key-input"><input id="apiKey" type="password" autocomplete="off" maxlength="1000" spellcheck="false"><button id="toggleKey" type="button" aria-pressed="false" data-i18n="showKey">Mostrar</button></span><small id="keyHelp" data-i18n="modelsKeyHint">Introduce tu clave y pulsa «Cargar modelos».</small></label>
+      <label id="apiKeyLabel"><span>API key</span><span class="key-input"><input id="apiKey" type="password" autocomplete="off" maxlength="1000" spellcheck="false"><button id="toggleKey" type="button" aria-pressed="false" data-i18n="showKey">Mostrar</button></span><small id="keyHelp" data-i18n="modelsKeyHint">Introduce tu clave y pulsa «Cargar modelos».</small></label>
+    </fieldset>
+    <fieldset class="settings-group" id="serverDefaultSection" hidden>
+      <legend data-i18n="serverDefault">Servidor (por defecto)</legend>
+      <p class="hint" id="serverDefaultStatus" role="status"></p>
+      <div id="serverDefaultLockRow">
+        <label><span data-i18n="serverDefaultPasswordLabel">Contraseña</span><input id="serverDefaultPassword" type="password" autocomplete="off" data-placeholder="serverDefaultPasswordPlaceholder" placeholder="Contraseña del servidor"></label>
+        <button type="button" id="unlockServerDefault" data-i18n="serverDefaultUnlock">Desbloquear</button>
+      </div>
+      <p class="error" id="serverDefaultError" role="alert"></p>
     </fieldset>
     <fieldset class="settings-group model-settings" id="modelSettings">
       <legend data-i18n="assistantModel">Modelo de UMLBuddy</legend>

@@ -1,4 +1,5 @@
 import http from 'node:http';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -16,13 +17,34 @@ const serverDefaults = {
   anthropic: { key: process.env.ANTHROPIC_API_KEY || '', model: process.env.ANTHROPIC_DEFAULT_MODEL || '' },
   gemini: { key: process.env.GEMINI_API_KEY || '', model: process.env.GEMINI_DEFAULT_MODEL || '' },
 };
-function resolveApiKey(provider, apiKey) {
-  const clientKey = typeof apiKey === 'string' ? apiKey.trim() : '';
-  return clientKey || serverDefaults[provider]?.key || '';
+const serverDefaultPassword = process.env.SERVER_DEFAULT_PASSWORD || '';
+const serverDefaultSecret = process.env.SERVER_DEFAULT_TOKEN_SECRET || serverDefaultPassword || 'modelau-server-default';
+function signServerDefaultToken() {
+  const payload = Buffer.from(JSON.stringify({ type: 'server-default', exp: Date.now() + 86400000 })).toString('base64');
+  return `${payload}.${createHmac('sha256', serverDefaultSecret).update(payload).digest('hex')}`;
 }
-function resolveModel(provider, model) {
+function verifyServerDefaultToken(token) {
+  if (typeof token !== 'string' || token.length > 2000 || !token.includes('.')) return false;
+  const [payload, sig] = token.split('.');
+  const expected = createHmac('sha256', serverDefaultSecret).update(payload).digest('hex');
+  const a = Buffer.from(sig), b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return false;
+  try {
+    const data = JSON.parse(Buffer.from(payload, 'base64').toString('utf8'));
+    return data.type === 'server-default' && typeof data.exp === 'number' && data.exp > Date.now();
+  } catch { return false; }
+}
+function resolveApiKey(provider, apiKey, serverDefaultToken) {
+  const clientKey = typeof apiKey === 'string' ? apiKey.trim() : '';
+  if (clientKey) return clientKey;
+  if (verifyServerDefaultToken(serverDefaultToken)) return serverDefaults[provider]?.key || '';
+  return '';
+}
+function resolveModel(provider, model, serverDefaultToken) {
   const clientModel = typeof model === 'string' ? model.trim() : '';
-  return clientModel || serverDefaults[provider]?.model || '';
+  if (clientModel) return clientModel;
+  if (verifyServerDefaultToken(serverDefaultToken)) return serverDefaults[provider]?.model || '';
+  return '';
 }
 async function body(req, limit = 2_000_000) {
   const chunks = []; let size = 0;
@@ -36,9 +58,17 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https: http: data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
   try {
     const url = new URL(req.url, 'http://localhost');
+    if (req.method === 'POST' && url.pathname === '/api/server-default/unlock') {
+      const data = JSON.parse(await body(req, 1000));
+      const { password } = data;
+      if (!serverDefaultPassword) return json(res, 500, { error: 'No hay contraseña de administrador configurada en el servidor.' });
+      if (typeof password !== 'string' || !password) return json(res, 400, { error: 'Introduce la contraseña.' });
+      if (password !== serverDefaultPassword) return json(res, 401, { error: 'Contraseña incorrecta.' });
+      return json(res, 200, { token: signServerDefaultToken(), expiresIn: '1d' });
+    }
     if (req.method === 'POST' && url.pathname === '/api/models') {
-      const { provider, apiKey = '', endpoint } = JSON.parse(await body(req, 10000));
-      try { return json(res, 200, await discoverModels(provider, resolveApiKey(provider, apiKey), endpoint)); }
+      const { provider, apiKey = '', endpoint, serverDefaultToken } = JSON.parse(await body(req, 10000));
+      try { return json(res, 200, await discoverModels(provider, resolveApiKey(provider, apiKey, serverDefaultToken), endpoint)); }
       catch (error) {
         if (!(error instanceof ModelDiscoveryError)) throw error;
         return json(res, error.status, { error: error.message, code: error.code, upstreamStatus: error.upstreamStatus });
@@ -72,11 +102,11 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === 'POST' && url.pathname === '/api/chat') {
       const data = JSON.parse(await body(req));
-      const { provider, model, apiKey, exercise, code, diagramType, procedureStep, messages } = data;
+      const { provider, model, apiKey, exercise, code, diagramType, procedureStep, messages, serverDefaultToken } = data;
       if (typeof apiKey !== 'string' || apiKey.length > 1000 || /[\r\n]/.test(apiKey)) throw new Error('Configura una clave API válida.');
-      const key = resolveApiKey(provider, apiKey);
+      const key = resolveApiKey(provider, apiKey, serverDefaultToken);
       if (provider !== 'compatible' && !key) throw new Error('Configura una clave API válida.');
-      const resolvedModel = resolveModel(provider, model);
+      const resolvedModel = resolveModel(provider, model, serverDefaultToken);
       if (!resolvedModel || resolvedModel.length > 200) throw new Error('Introduce un identificador de modelo válido.');
       if (typeof exercise !== 'string' || exercise.length > 100000 || typeof code !== 'string' || code.length > 100000) throw new Error('El contexto es demasiado largo o no válido.');
       if (!['class', 'usecase', 'sequence'].includes(diagramType)) throw new Error('Tipo de diagrama no válido.');
@@ -108,7 +138,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/api/config') {
       const defaults = {};
       for (const [provider, def] of Object.entries(serverDefaults)) defaults[provider] = { key: !!def.key, model: def.model || '' };
-      return json(res, 200, { defaults });
+      return json(res, 200, { defaults, serverDefault: { password: !!serverDefaultPassword } });
     }
     if (req.method !== 'GET') return json(res, 405, { error: 'Método no permitido.' });
     const files = { '/': 'index.html', '/app.js': 'app.js', '/chat-stream.js': 'chat-stream.js', '/class-members.js': 'class-members.js', '/class-relations.js': 'class-relations.js', '/diagram-relations.js': 'diagram-relations.js', '/diagram-elements.js': 'diagram-elements.js', '/diagram-checks.js': 'diagram-checks.js', '/procedure-steps.js': 'procedure-steps.js', '/highlight-coverage.js': 'highlight-coverage.js', '/styles.css': 'styles.css', '/favicon.ico': 'favicon.ico', '/favicon.svg': 'favicon.svg', '/assets/assistant-logo.png': 'assets/assistant-logo.png', '/assets/site-logo.png': 'assets/site-logo.png' };

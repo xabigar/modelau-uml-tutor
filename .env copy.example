@@ -1,0 +1,13 @@
+# Server-side defaults (optional). When set, the assistant works without
+# students entering a key or model in the browser. A browser key always wins.
+PORT=3000
+HOST=0.0.0.0
+
+OPENAI_API_KEY=
+OPENAI_DEFAULT_MODEL=gpt-4o-mini
+
+# ANTHROPIC_API_KEY=
+# ANTHROPIC_DEFAULT_MODEL=
+
+# GEMINI_API_KEY=
+# GEMINI_DEFAULT_MODEL=
