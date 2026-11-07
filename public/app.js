@@ -38,8 +38,8 @@ Object.assign(strings.es, { chatReady:'Listo para conversar', chatNotReady:'Falt
 Object.assign(strings.en, { chatReady:'Ready to chat', chatNotReady:'Connection needs setup', chatConnectionError:'Check the connection', responding:'Responding…', enterHint:'Enter to send · Shift+Enter for a new line', readyHint:'Model and connection configured. Availability is checked when you send.', sendingHint:'UMLBuddy is preparing a reply.' });
 Object.assign(strings.es, { noMultiplicity:'Esta relación no tiene multiplicidad en ningún extremo.', isolatedUseCase:'Este caso de uso no está conectado a nada todavía.', isolatedActor:'Este actor no está conectado a ningún caso de uso todavía.', isolatedParticipant:'Este participante no interviene en ningún mensaje todavía.' });
 Object.assign(strings.en, { noMultiplicity:'This relationship has no multiplicity on either end.', isolatedUseCase:'This use case isn’t connected to anything yet.', isolatedActor:'This actor isn’t connected to any use case yet.', isolatedParticipant:'This participant isn’t involved in any message yet.' });
-Object.assign(strings.es, { idleNudgeSettings:'Avisos de inactividad', idleNudgeLabel:'Avisar tras inactividad (minutos)', idleNudgeHint:'Un aviso discreto aparece si el diagrama sigue incompleto tras este tiempo sin actividad.', idleNudgeAria:'UMLBuddy · tu diagrama parece incompleto, quizás quieras seguir trabajando o preguntar' });
-Object.assign(strings.en, { idleNudgeSettings:'Inactivity nudges', idleNudgeLabel:'Nudge after inactivity (minutes)', idleNudgeHint:'A discreet nudge appears if the diagram is still incomplete after this much inactivity.', idleNudgeAria:'UMLBuddy · your diagram looks incomplete, you might want to keep working or ask a question' });
+Object.assign(strings.es, { idleNudgeSettings:'Avisos de inactividad', idleNudgeLabel:'Avisar tras inactividad (minutos)', idleNudgeHint:'Un bocadillo de ayuda aparece junto a UMLBuddy si el diagrama sigue incompleto tras este tiempo sin actividad.', idleNudgeAria:'UMLBuddy · tu diagrama parece incompleto, quizás quieras seguir trabajando o preguntar', idleNudgeBubble:'¿Te has atascado? Puedo ayudarte a seguir, sin darte la solución.' });
+Object.assign(strings.en, { idleNudgeSettings:'Inactivity nudges', idleNudgeLabel:'Nudge after inactivity (minutes)', idleNudgeHint:'A help bubble appears next to UMLBuddy if the diagram is still incomplete after this much inactivity.', idleNudgeAria:'UMLBuddy · your diagram looks incomplete, you might want to keep working or ask a question', idleNudgeBubble:'Feeling stuck? I can help you move on, without giving away the solution.' });
 Object.assign(strings.es, { uncoveredHint:'Todavía no aparece en tu diagrama.', showDiagramHighlights:'Ver en el diagrama' });
 Object.assign(strings.en, { uncoveredHint:'Not in your diagram yet.', showDiagramHighlights:'Show in diagram' });
 Object.assign(strings.es, { procedureStepLabel:'Paso del proceso', procedureStepAuto:'Automático', step_class_classes:'Identificar clases', step_class_attributes:'Añadir atributos', step_class_associations:'Añadir relaciones', step_class_multiplicities:'Añadir multiplicidades', step_class_methods:'Añadir métodos', step_class_review:'Revisar y refinar', step_usecase_actors:'Identificar actores', step_usecase_useCases:'Identificar casos de uso', step_usecase_links:'Conectar actores y casos de uso', step_usecase_review:'Revisar límites, include/extend', step_sequence_participants:'Identificar participantes', step_sequence_messages:'Añadir mensajes', step_sequence_allConnected:'Conectar a todos los participantes', step_sequence_fragments:'Modelar alternativas (alt/loop)', step_sequence_review:'Revisar y refinar' });
@@ -79,7 +79,7 @@ function updateServerDefaultStatus() {
 function applyAssistantVisibility() {
   $('chatPanel').hidden = !state.assistantOpen;
   $('workspace').classList.toggle('assistant-hidden',!state.assistantOpen);
-  $('assistantLauncherLabel').textContent = t('assistant');
+  $('assistantLauncherLabel').textContent = t(nudgeActive ? 'idleNudgeBubble' : 'assistant');
   $('assistantToggle').setAttribute('aria-label',t(state.assistantOpen ? 'hideAssistant' : 'openAssistant'));
   $('assistantToggle').title = t('openAssistant');
   $('assistantToggle').setAttribute('aria-expanded',String(state.assistantOpen));
@@ -114,6 +114,7 @@ function checkIdleNudge() {
   nudgeActive = shouldNudge;
   $('assistantToggle').dataset.nudge = String(shouldNudge);
   $('assistantToggle').setAttribute('aria-label', shouldNudge ? t('idleNudgeAria') : t('openAssistant'));
+  $('assistantLauncherLabel').textContent = t(shouldNudge ? 'idleNudgeBubble' : 'assistant');
 }
 setInterval(checkIdleNudge, 20000);
 function saveSettings() { try { localStorage.setItem(settingsKey,JSON.stringify(settings)); } catch { $('settingsError').textContent=t('storageError'); return false; } return true; }
