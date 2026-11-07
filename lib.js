@@ -33,6 +33,18 @@ export function parseTutorReply(text, exercise, diagramElements = []) {
     .slice(0, 3);
   return { message: parsed.message.slice(0, 24000), highlights, diagramHighlights };
 }
+export function extractProviderText(provider, result) {
+  if (provider === 'anthropic') return result.content?.filter(c => c.type === 'text').map(c => c.text).join('');
+  if (provider === 'gemini') return result.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('');
+  return result.choices?.[0]?.message?.content;
+}
+export function parseExerciseReply(text) {
+  let parsed;
+  try { parsed = JSON.parse(text.replace(/^\s*```(?:json)?\s*/, '').replace(/\s*```\s*$/, '')); }
+  catch { return { statement: text.trim().slice(0, 6000) }; }
+  if (typeof parsed.statement !== 'string' || !parsed.statement.trim()) throw new Error('El modelo no devolvió un enunciado válido.');
+  return { statement: parsed.statement.trim().slice(0, 6000) };
+}
 export function buildRequest(provider, model, key, system, messages, endpoint) {
   if (provider === 'compatible') {
     const url = new URL(endpoint);

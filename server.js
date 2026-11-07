@@ -3,13 +3,14 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { buildRequest, encodePlantUML, parseTutorReply } from './lib.js';
+import { buildRequest, encodePlantUML, extractProviderText, parseExerciseReply, parseTutorReply } from './lib.js';
 import { discoverModels, ModelDiscoveryError } from './models.js';
 import { buildStreamingRequest, streamTutorReply } from './streaming.js';
 import { stepList } from './public/procedure-steps.js';
 import { parseElements } from './public/diagram-elements.js';
 const root = path.dirname(fileURLToPath(import.meta.url));
 const system = await readFile(path.join(root, 'prompts/student-assistant.md'), 'utf8');
+const exerciseSystem = await readFile(path.join(root, 'prompts/exercise-generator.md'), 'utf8');
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || '127.0.0.1';
 const serverDefaults = {
@@ -131,9 +132,29 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       const result = await upstream.json();
-      const text = provider === 'anthropic' ? result.content?.filter(c => c.type === 'text').map(c => c.text).join('') : provider === 'gemini' ? result.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') : result.choices?.[0]?.message?.content;
+      const text = extractProviderText(provider, result);
       if (!text) throw new Error('El proveedor no devolvió texto. Prueba otro modelo o reformula la pregunta.');
       return json(res, 200, parseTutorReply(text, exercise, diagramElements));
+    }
+    if (req.method === 'POST' && url.pathname === '/api/generate-exercise') {
+      const data = JSON.parse(await body(req, 5000));
+      const { provider, model, apiKey, serverDefaultToken, topic, complexity, lang, endpoint } = data;
+      if (typeof apiKey !== 'string' || apiKey.length > 1000 || /[\r\n]/.test(apiKey)) throw new Error('Configura una clave API válida.');
+      const key = resolveApiKey(provider, apiKey, serverDefaultToken);
+      if (provider !== 'compatible' && !key) throw new Error('Configura una clave API válida.');
+      const resolvedModel = resolveModel(provider, model, serverDefaultToken);
+      if (!resolvedModel || resolvedModel.length > 200) throw new Error('Introduce un identificador de modelo válido.');
+      if (topic !== undefined && (typeof topic !== 'string' || topic.length > 200)) throw new Error('Tema no válido.');
+      if (!['simple', 'medium', 'complex'].includes(complexity)) throw new Error('Complejidad no válida.');
+      if (!['es', 'en'].includes(lang)) throw new Error('Idioma no válido.');
+      const instruction = `Generate one exercise. Complexity: ${complexity}. Topic: ${topic?.trim() ? topic.trim() : 'your choice — pick an original, pedagogically interesting domain not already common in UML textbooks'}. Write the exercise statement in ${lang === 'es' ? 'Spanish' : 'English'}.`;
+      const request = buildRequest(provider, resolvedModel, key, exerciseSystem, [{ role: 'user', content: instruction }], endpoint);
+      const upstream = await fetch(request.url, { method: 'POST', headers: { ...request.headers, 'Content-Type': 'application/json' }, body: JSON.stringify(request.body), redirect: 'error', signal: AbortSignal.timeout(60000) });
+      if (!upstream.ok) { await upstream.body?.cancel(); return json(res, 502, { error: `El proveedor respondió ${upstream.status}. Comprueba la clave, el modelo, la cuota y los permisos.` }); }
+      const result = await upstream.json();
+      const text = extractProviderText(provider, result);
+      if (!text) throw new Error('El proveedor no devolvió texto. Prueba otro modelo o reformula la pregunta.');
+      return json(res, 200, parseExerciseReply(text));
     }
     if (req.method === 'GET' && url.pathname === '/api/config') {
       const defaults = {};
