@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { buildRequest, encodePlantUML, extractProviderText, parseExerciseReply, parseTutorReply } from './lib.js';
 import { discoverModels, ModelDiscoveryError } from './models.js';
+import { requestLang, translateError } from './errors-i18n.js';
 import { buildStreamingRequest, streamTutorReply } from './streaming.js';
 import { stepList } from './public/procedure-steps.js';
 import { parseElements } from './public/diagram-elements.js';
@@ -52,8 +53,9 @@ async function body(req, limit = 2_000_000) {
   for await (const chunk of req) { size += chunk.length; if (size > limit) throw Object.assign(new Error('Archivo o petición demasiado grande.'), { status: 413 }); chunks.push(chunk); }
   return Buffer.concat(chunks);
 }
-function json(res, status, value) { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(value)); }
+function json(res, status, value) { if (value && typeof value.error === 'string') value = { ...value, error: translateError(value.error, res.lang) }; res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(value)); }
 const server = http.createServer(async (req, res) => {
+  res.lang = requestLang(req);
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'no-referrer');
   res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https: http: data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
@@ -127,7 +129,7 @@ const server = http.createServer(async (req, res) => {
         const send = event => { if (!res.destroyed) res.write('data: ' + JSON.stringify(event) + '\n\n'); };
         const heartbeat = setInterval(() => { if (!res.destroyed) res.write(': keep-alive\n\n'); },15000);
         try { for await (const event of streamTutorReply(provider,upstream,exercise,diagramElements)) send(event); }
-        catch (error) { send({ type:'error', error:error.name === 'TimeoutError' ? 'El proveedor tardó demasiado. Inténtalo de nuevo.' : error.message }); }
+        catch (error) { send({ type:'error', error:translateError(error.name === 'TimeoutError' ? 'El proveedor tardó demasiado. Inténtalo de nuevo.' : error.message, res.lang) }); }
         finally { clearInterval(heartbeat); res.off('close',disconnect); res.end(); }
         return;
       }

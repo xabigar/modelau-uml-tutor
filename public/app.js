@@ -18,8 +18,8 @@ Object.assign(strings.es, { openAssistant:'Abrir UMLBuddy', hideAssistant:'Ocult
 Object.assign(strings.en, { openAssistant:'Open UMLBuddy', hideAssistant:'Hide UMLBuddy' });
 Object.assign(strings.es, { classDesignerHint:'Crea clases y relaciones. Puedes plegar los bloques y sus tarjetas.', relationships:'Relaciones', newRelationship:'+ Nueva relación', editRelationship:'Editar relación', emptyRelationships:'Todavía no hay relaciones. Crea una para conectar tus clases.', noMembers:'Sin atributos ni métodos', noLabel:'Sin etiqueta', confirmDeleteRelationship:'¿Eliminar esta relación?', relationChanged:'La relación ha cambiado. Vuelve a abrirla para editarla.' });
 Object.assign(strings.en, { classDesignerHint:'Create classes and relationships. Collapse the groups or their cards to keep the workspace tidy.', relationships:'Relationships', newRelationship:'+ New relationship', editRelationship:'Edit relationship', emptyRelationships:'No relationships yet. Create one to connect your classes.', noMembers:'No attributes or methods', noLabel:'No label', confirmDeleteRelationship:'Delete this relationship?', relationChanged:'The relationship has changed. Reopen it to edit.' });
-Object.assign(strings.es, { generate:'Generar', generateExerciseTitle:'Generar ejercicio', generateTopic:'Tema o dominio (opcional)', generateTopicPlaceholder:'Déjalo en blanco para un tema aleatorio', generateComplexity:'Complejidad', complexitySimple:'Simple', complexityMedium:'Media', complexityComplex:'Compleja', generateSubmit:'Generar', generating:'Generando…', confirmGenerateReplace:'¿Sustituir el enunciado actual por uno nuevo generado? Se perderán los resaltados asociados.', generateFailed:'No se pudo generar el ejercicio.' });
-Object.assign(strings.en, { generate:'Generate', generateExerciseTitle:'Generate exercise', generateTopic:'Topic or domain (optional)', generateTopicPlaceholder:'Leave blank for a random topic', generateComplexity:'Complexity', complexitySimple:'Simple', complexityMedium:'Medium', complexityComplex:'Complex', generateSubmit:'Generate', generating:'Generating…', confirmGenerateReplace:'Replace the current exercise with a newly generated one? Its associated highlights will be lost.', generateFailed:'Could not generate the exercise.' });
+Object.assign(strings.es, { generate:'Generar', generateExerciseTitle:'Generar ejercicio', generateTopic:'Tema o dominio (opcional)', generateTopicPlaceholder:'Déjalo en blanco para un tema aleatorio', generateComplexity:'Complejidad', complexitySimple:'Simple', complexityMedium:'Media', complexityComplex:'Compleja', generateSubmit:'Generar', generating:'Generando…', confirmGenerateReplace:'¿Sustituir el enunciado actual por uno nuevo generado? Se perderán los resaltados asociados.', generateFailed:'No se pudo generar el ejercicio.', generated:'Enunciado generado' });
+Object.assign(strings.en, { generate:'Generate', generateExerciseTitle:'Generate exercise', generateTopic:'Topic or domain (optional)', generateTopicPlaceholder:'Leave blank for a random topic', generateComplexity:'Complexity', complexitySimple:'Simple', complexityMedium:'Medium', complexityComplex:'Complex', generateSubmit:'Generate', generating:'Generating…', confirmGenerateReplace:'Replace the current exercise with a newly generated one? Its associated highlights will be lost.', generateFailed:'Could not generate the exercise.', generated:'Exercise generated' });
 Object.assign(strings.es, {
   settingsIntro:'Conecta un proveedor y elige el modelo para UMLBuddy.', connection:'Conexión', model:'Modelo', assistantModel:'Modelo de UMLBuddy', showKey:'Mostrar', hideKey:'Ocultar', modelsKeyHint:'Introduce tu clave y pulsa «Cargar modelos».', localKeyHint:'Opcional para servidores locales que no requieren autenticación.', modelsHint:'Consulta los modelos del proveedor con tu clave.', loadModels:'Cargar modelos', refreshModels:'Actualizar modelos', searchModels:'Buscar modelos', searchModelsPlaceholder:'Nombre o identificador…', chooseModel:'Selecciona un modelo…', manualModel:'Introducir un modelo manualmente…', manualModelId:'Identificador del modelo', manualModelHint:'Úsalo si tu endpoint no ofrece una lista o si el modelo no aparece.', renderingSettings:'Servidor de diagramas', modelCompatibility:'El listado no garantiza cuota ni compatibilidad. Elige un modelo que admita conversación de texto.', modelsReady:'Carga la lista para elegir un modelo, o introduce su identificador.', modelsCached:'Lista guardada. Actualiza para comprobar los modelos actuales.', modelsChanged:'La conexión ha cambiado. Vuelve a cargar los modelos.', modelsLoading:'Consultando modelos…', modelsLoaded:'Modelos cargados. Selecciona el que quieras usar.', modelsEmpty:'No hay modelos disponibles para esta conexión. Puedes introducir uno manualmente.', modelsKeyRequired:'Introduce una clave API antes de cargar los modelos.', modelsAuthError:'La clave no es válida o no tiene permiso para listar modelos. Comprueba la clave y sus permisos.', modelsRateLimit:'El proveedor ha limitado las peticiones. Espera un momento y reintenta.', modelsNotSupported:'Este endpoint no ofrece /models. Comprueba la URL base o introduce el modelo manualmente.', modelsProviderError:'El proveedor no pudo listar modelos. Reintenta o introduce el modelo manualmente.', modelsResponseInvalid:'El proveedor devolvió una lista no válida. Comprueba el endpoint o introduce el modelo manualmente.', modelsNetworkError:'No se pudo conectar. Comprueba la conexión y la URL del proveedor.', modelsTimeout:'El proveedor tardó demasiado. Vuelve a intentarlo.', modelsTooMany:'La lista es demasiado grande o tiene demasiadas páginas. Introduce el modelo manualmente.', providerInvalid:'Selecciona un proveedor válido.'
 });
@@ -117,7 +117,7 @@ function checkIdleNudge() {
 }
 setInterval(checkIdleNudge, 20000);
 function saveSettings() { try { localStorage.setItem(settingsKey,JSON.stringify(settings)); } catch { $('settingsError').textContent=t('storageError'); return false; } return true; }
-async function api(url, data, binary = false) { const response = await fetch(url,{method:'POST',headers:binary?{'Content-Type':'application/pdf'}:{'Content-Type':'application/json'},body:binary?data:JSON.stringify(data)}); const result = await response.json(); if (!response.ok) throw new Error(result.error || t('requestError')); return result; }
+async function api(url, data, binary = false) { const response = await fetch(url,{method:'POST',headers:{'Content-Type':binary?'application/pdf':'application/json','X-Lang':lang},body:binary?data:JSON.stringify(data)}); const result = await response.json(); if (!response.ok) throw new Error(result.error || t('requestError')); return result; }
 function setLanguage() { applyAssistantVisibility(); $('language').setAttribute('aria-label',t('languageLabel')); $('settingsButton').setAttribute('aria-label',t('settings')); $('newDiagram').setAttribute('aria-label',t('new')); $('newDiagram').title=t('new'); document.documentElement.lang=lang; $('diagramImage').alt=lang==='es'?'Diagrama UML':'UML diagram'; $('chatInput').setAttribute('aria-label',t('chatPlaceholder')); $('exerciseInput').setAttribute('aria-label',t('exercise')); $('zoomIn').setAttribute('aria-label',t('zoomIn')); $('zoomOut').setAttribute('aria-label',t('zoomOut'));  $('language').value=lang; document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n)); document.querySelectorAll('[data-placeholder]').forEach(el=>el.placeholder=t(el.dataset.placeholder)); $('designerHint').textContent=t(state.type==='class'?'classDesignerHint':'designerHint'); $('editExercise').textContent=t(editingExercise?'done':'edit'); updateDesigner(); renderExercise(); renderMessages(); updateModel(); $('lines').textContent=$('code').value.split('\n').length+' '+t('lines'); if($('renderStatus').textContent) {renderVersion++;renderDiagram();} updateSaveStatus(); }
 $('language').onchange=()=>{lang=$('language').value; settings.language=lang;saveSettings();setLanguage();};
 function loadDiagram() { document.querySelector('.designer > .scroll').scrollTop=0; diagramView.fit = true; $('diagramType').value=state.type; $('code').value=current().code; highlights=[]; $('chatError').textContent=''; updateCode(); renderMessages(); renderExercise(); }
@@ -357,7 +357,7 @@ function addMemberRow(isMethod, member = {}) {
     label.append(title,control); row.append(label);
   }
   field('visibility', visibility);
-  for (const [name, label, placeholder] of [['name','memberName',isMethod?'buscar':'nombre'], ...(isMethod ? [['parameters','parameters','id : int']] : []), ['type',isMethod?'returnType':'attributeType',isMethod?'boolean':'String']]) {
+  for (const [name, label, placeholder] of [['name','memberName',isMethod?(lang==='es'?'buscar':'search'):(lang==='es'?'nombre':'name')], ...(isMethod ? [['parameters','parameters','id : int']] : []), ['type',isMethod?'returnType':'attributeType',isMethod?'boolean':'String']]) {
     const input = document.createElement('input'); input.dataset.field = name;
     input.value = member[name] || ''; input.placeholder = placeholder; input.maxLength = 500;
     field(label,input);
@@ -493,7 +493,7 @@ $('generateExerciseForm').onsubmit=async e=>{
   try{
     const result=await api('/api/generate-exercise',{provider:isServer?'openai':settings.provider,model:profile.model||(isServer?(serverDefaults.openai?.model||''):''),apiKey:isServer?'':(profile.apiKey||''),serverDefaultToken:isServer?settings.serverDefaultToken:undefined,endpoint:isServer?undefined:profile.endpoint,topic:$('generateTopicInput').value.trim(),complexity:$('generateComplexitySelect').value,lang});
     state.exercise=result.statement;highlights=[];$('exerciseInput').value=state.exercise;renderExercise();persist();
-    $('exerciseStatus').textContent=t('loaded');$('generateExerciseDialog').close();$('generateTopicInput').value='';
+    $('exerciseStatus').textContent=t('generated');$('generateExerciseDialog').close();$('generateTopicInput').value='';
   }catch(error){$('generateExerciseError').textContent=error.message||t('generateFailed');$('exerciseStatus').textContent='';}
   finally{$('submitGenerateExercise').disabled=false;}
 };
@@ -571,7 +571,7 @@ $('chatInput').addEventListener('keydown',event=>{
   }
 });
 async function streamChat(data,onText){
-  const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...data,stream:true})});
+  const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','X-Lang':lang},body:JSON.stringify({...data,stream:true})});
   if(!response.ok){const result=await response.json();throw new Error(result.error||t('requestError'));}
   let result;
   for await(const data of readSSE(response.body)){
@@ -707,7 +707,7 @@ $('unlockServerDefault').onclick = async () => {
   $('serverDefaultError').textContent = '';
   $('unlockServerDefault').disabled = true;
   try {
-    const response = await fetch('/api/server-default/unlock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})});
+    const response = await fetch('/api/server-default/unlock',{method:'POST',headers:{'Content-Type':'application/json','X-Lang':lang},body:JSON.stringify({password})});
     const result = await response.json();
     if (!response.ok) { $('serverDefaultError').textContent = result.error || t('serverDefaultWrongPassword'); return; }
     settings.serverDefaultToken = result.token;
@@ -744,7 +744,7 @@ $('loadModels').onclick = async () => {
   modelStatus('modelsLoading');
   try {
     const body = isServer ? { provider:'openai', apiKey:'', serverDefaultToken:settings.serverDefaultToken } : { provider, apiKey:profile.apiKey, endpoint:profile.endpoint };
-    const response = await fetch('/api/models',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:controller.signal});
+    const response = await fetch('/api/models',{method:'POST',headers:{'Content-Type':'application/json','X-Lang':lang},body:JSON.stringify(body),signal:controller.signal});
     const result = await response.json();
     if (modelRequest !== controller) return;
     if (!response.ok) { modelStatus(result.code && strings[lang][result.code] ? result.code : 'modelsNetworkError',true); return; }
