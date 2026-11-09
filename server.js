@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { buildRequest, buildStudentContext, encodePlantUML, extractProviderText, parseExerciseReply, parseTutorReply } from './lib.js';
+import { buildRequest, buildStudentContext, encodePlantUML, extractProviderText, lockedModel, parseExerciseReply, parseTutorReply } from './lib.js';
 import { discoverModels, ModelDiscoveryError } from './models.js';
 import { requestLang, translateError } from './errors-i18n.js';
 import { buildStreamingRequest, streamTutorReply } from './streaming.js';
@@ -43,11 +43,10 @@ function resolveApiKey(provider, apiKey, serverDefaultToken) {
   if (verifyServerDefaultToken(serverDefaultToken)) return serverDefaults[provider]?.key || '';
   return '';
 }
-function resolveModel(provider, model, serverDefaultToken) {
-  const clientModel = typeof model === 'string' ? model.trim() : '';
-  if (clientModel) return clientModel;
-  if (verifyServerDefaultToken(serverDefaultToken)) return serverDefaults[provider]?.model || '';
-  return '';
+function resolveModel(provider, model, apiKey, serverDefaultToken) {
+  const locked = lockedModel(serverDefaults, provider, apiKey, verifyServerDefaultToken(serverDefaultToken));
+  if (locked) return locked;                                  // server key: only the model configured on the server
+  return typeof model === 'string' ? model.trim() : '';
 }
 async function body(req, limit = 2_000_000) {
   const chunks = []; let size = 0;
@@ -72,6 +71,8 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === 'POST' && url.pathname === '/api/models') {
       const { provider, apiKey = '', endpoint, serverDefaultToken } = JSON.parse(await body(req, 10000));
+      const locked = lockedModel(serverDefaults, provider, apiKey, verifyServerDefaultToken(serverDefaultToken));
+      if (locked) return json(res, 200, { models: [{ id: locked, name: locked }] });   // server key: do not list the whole account
       try { return json(res, 200, await discoverModels(provider, resolveApiKey(provider, apiKey, serverDefaultToken), endpoint)); }
       catch (error) {
         if (!(error instanceof ModelDiscoveryError)) throw error;
@@ -110,7 +111,7 @@ const server = http.createServer(async (req, res) => {
       if (typeof apiKey !== 'string' || apiKey.length > 1000 || /[\r\n]/.test(apiKey)) throw new Error('Configura una clave API válida.');
       const key = resolveApiKey(provider, apiKey, serverDefaultToken);
       if (provider !== 'compatible' && !key) throw new Error('Configura una clave API válida.');
-      const resolvedModel = resolveModel(provider, model, serverDefaultToken);
+      const resolvedModel = resolveModel(provider, model, apiKey, serverDefaultToken);
       if (!resolvedModel || resolvedModel.length > 200) throw new Error('Introduce un identificador de modelo válido.');
       if (typeof exercise !== 'string' || exercise.length > 100000 || typeof code !== 'string' || code.length > 100000) throw new Error('El contexto es demasiado largo o no válido.');
       if (!['class', 'usecase', 'sequence'].includes(diagramType)) throw new Error('Tipo de diagrama no válido.');
@@ -146,7 +147,7 @@ const server = http.createServer(async (req, res) => {
       if (typeof apiKey !== 'string' || apiKey.length > 1000 || /[\r\n]/.test(apiKey)) throw new Error('Configura una clave API válida.');
       const key = resolveApiKey(provider, apiKey, serverDefaultToken);
       if (provider !== 'compatible' && !key) throw new Error('Configura una clave API válida.');
-      const resolvedModel = resolveModel(provider, model, serverDefaultToken);
+      const resolvedModel = resolveModel(provider, model, apiKey, serverDefaultToken);
       if (!resolvedModel || resolvedModel.length > 200) throw new Error('Introduce un identificador de modelo válido.');
       if (topic !== undefined && (typeof topic !== 'string' || topic.length > 200)) throw new Error('Tema no válido.');
       if (!['simple', 'medium', 'complex'].includes(complexity)) throw new Error('Complejidad no válida.');

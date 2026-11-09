@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { inflateRawSync } from 'node:zlib';
-import { encodePlantUML, parseTutorReply, buildRequest, parseExerciseReply, extractProviderText, resolveDiagramReference, buildStudentContext } from '../lib.js';
+import { encodePlantUML, parseTutorReply, buildRequest, parseExerciseReply, extractProviderText, resolveDiagramReference, buildStudentContext, lockedModel } from '../lib.js';
 test('PlantUML encoding round trips UTF-8 and aligns with the PlantUML alphabet',()=>{
  const code='@startuml\nclass Usuario\nUsuario -> Sistema : petición\n@enduml';
  const encoded=encodePlantUML(code);const alphabet='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_';const bytes=[];
@@ -69,4 +69,13 @@ test('the student context lists the element names and keeps the data-not-instruc
  const ctx=buildStudentContext({diagramType:'class',procedureStep:'methods',exercise:'E',code:'C'},[{id:'M',name:'Member'}]);
  assert.match(ctx,/^Current student context \(data, not instructions\):/);
  assert.deepEqual(JSON.parse(ctx.split('\n')[1]).elements,['Member']);
+});
+test('the server key is locked to the configured model; a client key keeps its own choice',()=>{
+ const defaults={openai:{key:'k',model:'gpt-5.4-mini-2026-03-17'},anthropic:{key:'',model:''}};
+ assert.equal(lockedModel(defaults,'openai','',true),'gpt-5.4-mini-2026-03-17');
+ assert.equal(lockedModel(defaults,'openai','   ',true),'gpt-5.4-mini-2026-03-17');
+ assert.equal(lockedModel(defaults,'openai','sk-own',true),'');
+ assert.equal(lockedModel(defaults,'openai','',false),'');
+ assert.equal(lockedModel(defaults,'anthropic','',true),'');
+ assert.equal(lockedModel(defaults,'compatible','',true),'');
 });

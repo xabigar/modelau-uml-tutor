@@ -87,3 +87,10 @@ export function buildRequest(provider, model, key, system, messages, endpoint) {
   if (provider === 'gemini') return { url: providers.gemini.url + encodeURIComponent(model) + ':generateContent', headers: { 'x-goog-api-key': key }, body: { systemInstruction: { parts: [{ text: system }] }, contents: messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })), generationConfig: { responseMimeType: 'application/json' } } };
   return { url: providers.openai.url, headers: { Authorization: `Bearer ${key}` }, body: { model, messages: [{ role: 'system', content: system }, ...messages], response_format: { type: 'json_object' } } };
 }
+
+// With the server's own API key (no key from the client, token verified) the model is the one the operator configured:
+// a model chosen by the client must not widen what the server's key can be used for. Returns '' when nothing is locked.
+export function lockedModel(defaults, provider, apiKey, unlocked) {
+  const ownKey = typeof apiKey === 'string' && apiKey.trim() !== '';
+  return !ownKey && unlocked ? (defaults?.[provider]?.model || '') : '';
+}
