@@ -5,7 +5,7 @@ Usage: python3 evaluation/e2/analyze.py responses.csv [--out e2-results.md]
 
 Reads the CSV exported by the survey app (modelau_survey) and writes a Markdown report with
 - the respondents' profile,
-- Part A: ModelaU vs. conventional chat per dimension (medians, signs, exact Wilcoxon signed-rank test),
+- Part A: ModelaU vs. conventional chat per dimension (medians and signs),
 - Part B: relevance and expected intrusiveness per mechanism, and the integrated workspace,
 - Part C: adoption items,
 - Part D: the open answers, verbatim, for thematic coding.
@@ -18,7 +18,7 @@ With --impute-mode, Part A blanks (ModelaU or chat rating of a dimension) get th
 the Part A table on the observed pairs only, as a sensitivity check.
 No third-party packages needed.
 """
-import argparse, csv, itertools, statistics as st
+import argparse, csv, statistics as st
 from collections import Counter
 
 DIMS = [('specific', 'Specific'), ('selective', 'Selective'), ('timely', 'Timely'), ('context', 'Contextualized')]
@@ -36,40 +36,6 @@ ADOPT = [('relative', 'Would rather students used ModelaU than a general chat'),
 def num(v):
     v = (v or '').strip()
     return float(v) if v else None
-
-
-def ranks(values):
-    """Average ranks (1-based) of the absolute values, ties sharing their mean rank."""
-    order = sorted(range(len(values)), key=lambda i: values[i])
-    r = [0.0] * len(values)
-    i = 0
-    while i < len(order):
-        j = i
-        while j + 1 < len(order) and values[order[j + 1]] == values[order[i]]:
-            j += 1
-        for k in range(i, j + 1):
-            r[order[k]] = (i + j) / 2 + 1
-        i = j + 1
-    return r
-
-
-def wilcoxon_exact(diffs):
-    """Exact two-sided Wilcoxon signed-rank test; zero differences dropped (Wilcoxon's method)."""
-    d = [x for x in diffs if x != 0]
-    n = len(d)
-    if n == 0:
-        return n, None, None
-    r = ranks([abs(x) for x in d])
-    w_plus = sum(rk for rk, x in zip(r, d) if x > 0)
-    total = sum(r)
-    expected = total / 2
-    obs = abs(w_plus - expected)
-    hits = 0
-    for signs in itertools.product((0, 1), repeat=n):
-        w = sum(rk for rk, s in zip(r, signs) if s)
-        if abs(w - expected) >= obs - 1e-9:
-            hits += 1
-    return n, w_plus, hits / 2 ** n
 
 
 def fmt(x, nd=2):
@@ -116,16 +82,15 @@ def main():
 
     def part_a(rows, title):
       out.append(title)
-      out.append('| Dimension | Pairs | ModelaU median | Chat median | Median diff. | + / = / - | W+ | n (non-zero) | exact p (two-sided) |')
-      out.append('|---|---|---|---|---|---|---|---|---|')
+      out.append('| Dimension | Pairs | ModelaU median | Chat median | Median diff. | + / = / - |')
+      out.append('|---|---|---|---|---|---|')
       for key, name in DIMS:
         pairs = [(num(r[f'A_{key}_mu']), num(r[f'A_{key}_chat'])) for r in rows]
         pairs = [(m, c) for m, c in pairs if m is not None and c is not None]
         diffs = [m - c for m, c in pairs]
-        n, w, p = wilcoxon_exact(diffs)
         signs = f'{sum(x > 0 for x in diffs)} / {sum(x == 0 for x in diffs)} / {sum(x < 0 for x in diffs)}'
         out.append(f'| {name} | {len(pairs)} | {fmt(st.median(m for m, _ in pairs))} | {fmt(st.median(c for _, c in pairs))} | '
-                   f'{fmt(st.median(diffs))} | {signs} | {fmt(w)} | {n} | {fmt(p, 3)} |')
+                   f'{fmt(st.median(diffs))} | {signs} |')
       out.append('')
 
     if a.impute_mode:

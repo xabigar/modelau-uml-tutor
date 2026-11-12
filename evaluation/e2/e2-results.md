@@ -12,21 +12,21 @@ Blank ratings filled with the item mode: A_specific_chat (respondent 8) = 3; A_s
 
 ## Part A: ModelaU vs. conventional chat (blanks filled with the mode)
 
-| Dimension | Pairs | ModelaU median | Chat median | Median diff. | + / = / - | W+ | n (non-zero) | exact p (two-sided) |
-|---|---|---|---|---|---|---|---|---|
-| Specific | 8 | 5 | 3 | 2 | 7 / 1 / 0 | 28 | 7 | 0.016 |
-| Selective | 8 | 5 | 2 | 3 | 7 / 1 / 0 | 28 | 7 | 0.016 |
-| Timely | 8 | 5 | 1 | 3.5 | 8 / 0 / 0 | 36 | 8 | 0.008 |
-| Contextualized | 8 | 5 | 1 | 3 | 8 / 0 / 0 | 36 | 8 | 0.008 |
+| Dimension | Pairs | ModelaU median | Chat median | Median diff. | + / = / - |
+|---|---|---|---|---|---|
+| Specific | 8 | 5 | 3 | 2 | 7 / 1 / 0 |
+| Selective | 8 | 5 | 2 | 3 | 7 / 1 / 0 |
+| Timely | 8 | 5 | 1 | 3.5 | 8 / 0 / 0 |
+| Contextualized | 8 | 5 | 1 | 3 | 8 / 0 / 0 |
 
 ## Part A, sensitivity check: observed pairs only
 
-| Dimension | Pairs | ModelaU median | Chat median | Median diff. | + / = / - | W+ | n (non-zero) | exact p (two-sided) |
-|---|---|---|---|---|---|---|---|---|
-| Specific | 7 | 5 | 3 | 2 | 6 / 1 / 0 | 21 | 6 | 0.031 |
-| Selective | 7 | 5 | 2 | 3 | 6 / 1 / 0 | 21 | 6 | 0.031 |
-| Timely | 6 | 5 | 1 | 3.5 | 6 / 0 / 0 | 21 | 6 | 0.031 |
-| Contextualized | 7 | 5 | 1 | 3 | 7 / 0 / 0 | 28 | 7 | 0.016 |
+| Dimension | Pairs | ModelaU median | Chat median | Median diff. | + / = / - |
+|---|---|---|---|---|---|
+| Specific | 7 | 5 | 3 | 2 | 6 / 1 / 0 |
+| Selective | 7 | 5 | 2 | 3 | 6 / 1 / 0 |
+| Timely | 6 | 5 | 1 | 3.5 | 6 / 0 / 0 |
+| Contextualized | 7 | 5 | 1 | 3 | 7 / 0 / 0 |
 
 ## Part B: mechanisms (1-5; intrusiveness: "would get in the student's way", lower is better)
 
