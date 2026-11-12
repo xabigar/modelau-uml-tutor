@@ -38,7 +38,7 @@
 | Exact names | 8 | 4.75 | 8 | 1.62 |
 | Validated highlight | 8 | 4.25 | 8 | 1.75 |
 | One issue per reply | 8 | 4.62 | 8 | 1.25 |
-| At most three highlights | 6 | 3.5 | 6 | 1.33 |
+| At most three highlights | 8 | 3.75 | 7 | 1.57 |
 | Inactivity nudge | 8 | 4 | 8 | 1.88 |
 | Edit-time checks | 7 | 4.57 | 8 | 1.5 |
 | Process-step detection | 8 | 4.5 | 8 | 1.25 |

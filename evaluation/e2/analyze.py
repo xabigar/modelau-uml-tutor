@@ -11,8 +11,9 @@ Reads the CSV exported by the survey app (modelau_survey) and writes a Markdown 
 - Part D: the open answers, verbatim, for thematic coding.
 With --aggregate-only the report leaves out the universities and the verbatim open answers.
 Blank cells are "don't know / not seen in the video" answers: they are left out item by item, and every table gives the n
-behind each figure. The two instructors who answered before mechanism 4 (at most three highlights) replaced "one scenario at a time"
-rated the earlier mechanism (columns B_scenario_*), so mechanism 4 is rated by the other six.
+behind each figure. The two instructors who answered on 9 November saw mechanism 4 under its earlier wording ("one scenario at a
+time"), but had been told before answering that it was now "at most three highlights"; their ratings, stored in B_scenario_*,
+count for mechanism 4.
 No third-party packages needed.
 """
 import argparse, csv, statistics as st
@@ -47,6 +48,10 @@ def main():
                     help='leave out the universities and the verbatim open answers (for publication: respondents consented to aggregated use)')
     a = ap.parse_args()
     rows = list(csv.DictReader(open(a.csv, encoding='utf-8')))
+    for r in rows:   # mechanism 4 under its earlier wording (see above)
+        for s in ('rel', 'intr'):
+            if num(r.get(f'B_cap_{s}')) is None and num(r.get(f'B_scenario_{s}')) is not None:
+                r[f'B_cap_{s}'] = r[f'B_scenario_{s}']
     out = [f'# E2 results ({len(rows)} responses)\n']
     out.append('## Profile\n')
     for col in ['exp_years', 'ai_use', 'watched', 'modelau_use']:

@@ -23,6 +23,7 @@ evaluation/
   e2/                     E2, instructors' judgment after a recorded demonstration
     demo-video-en.mp4     the demonstration the instructors watched (about 4 minutes, silent, captioned)
     questionnaire-en.md   the questionnaire items (English version; respondents could also answer in Spanish)
+    questionnaire-en.pdf, questionnaire-es.pdf    screenshots of the six pages of the questionnaire as the instructors saw them (English and Spanish)
     baseline_reply.mjs    how the conventional chat's reply shown in the video was produced (same model, no-corrections prompt)
     baseline_reply.json, scenario.mjs                 that reply and the exercise/diagram it answers
     analyze.py            analysis of the questionnaire export (Fig. 3 and Fig. 4; the ratings of the chat reply in the video are not analyzed)
@@ -81,5 +82,6 @@ The human coding uses the first run of each prompt for `modelau`, `baseline` and
 - Blank ratings are "don't know / not seen in the video" answers: each item is analyzed over the instructors who answered it,
   and `e2-results.md` gives the n of every figure.
 - Mechanism 4 changed while the questionnaire was open: it was "one scenario at a time" until 10 November 2026 and is now
-  "at most three highlights". The two instructors who answered on 9 November rated the earlier mechanism (`B_scenario_*`
-  in the export) and were informed of the change; mechanism 4 is therefore rated by the other six (n = 6 in `e2-results.md`). The video in this folder is the current version.
+  "at most three highlights". The two instructors who answered on 9 November saw the earlier wording in the form but had been
+  told before answering that the mechanism was now "at most three highlights"; their ratings (`B_scenario_*` in the export)
+  count for mechanism 4, and `analyze.py` merges them. The video in this folder is the current version.
