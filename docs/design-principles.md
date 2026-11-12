@@ -1,6 +1,6 @@
 # ModelaU design principles and the study's verdict on each
 
-Nicol's four feedback-quality dimensions are the kernel theory (Nicol, 2010). Each principle states a cause, the mechanism that addresses it, and the rationale, in the cause–mechanism–rationale format used for earlier feedback-giving tools built on the same kernel theory (Díaz and Garmendia, 2025). The last two columns report the instructors' ratings after the demonstration (1–5, mean of 8 instructors): *relevance* = the mechanism helps the dimension it targets (higher is better); *intrusiveness* = expected to get in the student's way while modeling (lower is better).
+Nicol's four feedback-quality dimensions are the kernel theory (Nicol, 2010). Each principle follows a simplified form of the anatomy of a design principle (Gregor, Chandra Kruse and Seidel, 2020): its aim is the feedback dimension it serves, and it states the cause it answers, the mechanism that addresses it, and the rationale. The last two columns report the instructors' ratings after the demonstration (1–5, mean of 8 instructors): *relevance* = the mechanism helps the dimension it targets (higher is better); *intrusiveness* = expected to get in the student's way while modeling (lower is better).
 
 | Dimension | Mechanism | Cause | Artifact mechanism | Rationale | E1 evidence | E2 relevance | E2 intrusiveness |
 |---|---|---|---|---|---|---|---|
