@@ -1,6 +1,6 @@
 # ModelaU design principles and the study's verdict on each
 
-Nicol's four feedback-quality dimensions are the kernel theory (Nicol, 2010). Each principle states a cause, the mechanism that addresses it, and the rationale, in the cause–mechanism–rationale form of Concept&Go's requirements and design principles (Díaz-Garmendia et al., 2025). The last two columns report the instructors' ratings after the demonstration (1–5, mean of 8 instructors): *relevance* = the mechanism helps the dimension it targets (higher is better); *intrusiveness* = expected to get in the student's way while modeling (lower is better).
+Nicol's four feedback-quality dimensions are the kernel theory (Nicol, 2010). Each principle states a cause, the mechanism that addresses it, and the rationale, in the cause–mechanism–rationale format used for earlier feedback-giving tools built on the same kernel theory (Díaz and Garmendia, 2025). The last two columns report the instructors' ratings after the demonstration (1–5, mean of 8 instructors): *relevance* = the mechanism helps the dimension it targets (higher is better); *intrusiveness* = expected to get in the student's way while modeling (lower is better).
 
 | Dimension | Mechanism | Cause | Artifact mechanism | Rationale | E1 evidence | E2 relevance | E2 intrusiveness |
 |---|---|---|---|---|---|---|---|
@@ -11,7 +11,7 @@ Nicol's four feedback-quality dimensions are the kernel theory (Nicol, 2010). Ea
 | Timely | **Inactivity nudge** | A stuck student can disengage silently with no prompt to continue. | After a configurable period of inactivity on an incomplete diagram, a speech bubble offers help. | A nudge while still engaged is more actionable than one after the fact. | Acts outside the replies; E2 only. | 4.00 | 1.88 |
 | Timely | **Edit-time checks** | Structural errors can go unnoticed until a costly, much later review. | Deterministic checks run on every edit, independent of asking the tutor. | Catching errors at edit time prevents them propagating into later decisions. | Acts outside the replies; E2 only. | 4.63 | 1.50 |
 | Contextualized | **Step detection** | Feedback assuming a fixed step order can mistarget a student working legitimately out of order. | The current step is inferred from the diagram's own structure, with no mandatory order assumed. | Framing feedback against the actual step keeps it relevant to what the student is doing now. | The first prompt followed the inferred step even when the statement made another problem evident; the final one lets the statement take precedence. | 4.50 | 1.25 |
-| Contextualized | **Shared highlight vocabulary** | A requirement pointed out in the exercise can be forgotten once modeling moves on. | Exercise excerpts highlighted by the tutor are cross-checked against the diagram and uncovered ones are marked. | A shared vocabulary between text and diagram frames feedback against what remains to be modeled. | 1 of 94 proposed excerpts was not literally in the exercise text and was discarded. | 4.50 | 1.50 |
+| Contextualized | **Shared highlight vocabulary** | Feedback about the exercise can be difficult to connect to the relevant passage. | The tutor selects literal exercise excerpts as requirements, actors, or ambiguities. The server validates the excerpts and the interface highlights them using category colors. | Highlighting the relevant passages grounds feedback in the exercise requirements. | 1 of 94 proposed excerpts was not literally in the exercise text and was discarded. | 4.50 | 1.50 |
 
 ## Reading
 
@@ -19,3 +19,19 @@ Nicol's four feedback-quality dimensions are the kernel theory (Nicol, 2010). Ea
 - A mechanism is *approved* here when its mean relevance is at least 4 and its expected intrusiveness at most 2. Seven of the eight pass; **At most three highlights** stays open (relevance 3.4): instructors found it unobtrusive but less clearly selective, and in E1 it never had to act.
 - Where E1 and E2 differ, the principle is kept but flagged: **Exact names** was the highest-rated mechanism (4.75), yet E1 found the prompted rule weakly followed. The rating judges the principle as shown in a demonstration, not how well a prompt enforces it. The code-enforced validated channel held in E1.
 - Prompted rules did not all fail: one issue per reply held in all 18 coded replies. What failed was reproducing identifiers verbatim.
+
+## Prompt rules and code controls
+
+The table records the prompt instructions and code behavior for each mechanism. Quotations are verbatim excerpts from the prompt evaluated in E1, with omissions marked by “…”. The full prompt is available in the repository at `prompts/student-assistant.md`. Step detection is implemented in code and its inferred step is passed to the tutor through the prompt context.
+
+| Mechanism | Prompt | Code |
+|---|---|---|
+| Exact names | “cite the exact names of their classes, actors, use cases, participants, or relationships as they appear in their diagram”; the context lists the diagram's element names | Nothing checks the wording of the message |
+| Validated highlight | “Each `element` must be the exact identifier or the exact visible name as it appears in their diagram; if it does not exist yet, do not include it” | Each reference is resolved against the parsed diagram; unresolved ones are discarded |
+| One issue per reply | “Address a single, concrete problem or concept per response … leave the rest for another interaction”; “at most 2–3 short sentences before the question” | Nothing checks it (E1 measures it) |
+| At most three highlights | “At most 1–2 elements, consistent with addressing a single problem per response” | At most three references are kept, however many the model returns |
+| Inactivity nudge | — | A timer on an incomplete diagram shows a passive prompt |
+| Edit-time checks | — | Rules run on every edit, without the model |
+| Step detection | “Use it to choose your question when nothing more important stands out. The exercise statement comes first” | The step is inferred from the diagram (or set by the student) and passed in the context |
+| Shared highlight vocabulary | “Each `quote` must exist literally in the exercise statement” | Quotes not literally in the text are discarded; valid excerpts are highlighted using category colors |
+| *Leakage (not a mechanism)* | “Never hand over the complete diagram, an exhaustive list of elements, code that constitutes the solution, or the specific name of a missing class, actor, use case, or relationship”; “If the student asks for the solution, kindly redirect them … without naming the missing element” | Nothing checks it (E1 measures it) |
