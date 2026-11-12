@@ -28,8 +28,7 @@ Step 2, final numbers (after the red cells are settled in consensus.xlsx):
   joins the consensus labels with results/en/coding-key.csv (which tells which tutor wrote each reply) and writes
   table1-coded.md: counts per tutor and the LaTeX rows for Table 1 of the paper.
 
-Tutors reviewed: ModelaU (last version), the baseline and the no-corrections baseline (54 replies, 18 each). The strict baseline
-and the replies of earlier iterations of ModelaU have automatic measures only.
+Tutors reviewed: ModelaU (last version), the baseline and the no-corrections baseline (54 replies, 18 each).
 
 Requires: pip install openpyxl
 """
@@ -46,7 +45,7 @@ from openpyxl.worksheet.datavalidation import DataValidation
 HERE = pathlib.Path(__file__).resolve().parent
 RES = HERE.parent / "results" / "en"
 LEAK_LEVELS = ["hint", "borderline", "leak"]  # ordinal: how much is given away
-TUTORS = [("modelau", "ModelaU"), ("baseline", "Baseline"), ("baseline-strict", "Strict"), ("baseline-nocorr", "No-corr.")]
+TUTORS = [("modelau", "ModelaU"), ("baseline", "Baseline"), ("baseline-nocorr", "No-corr.")]
 SHEET_CAL, SHEET_COD = "Calibration", "Coding"
 C_CODE, C_ISSUES, C_LEAK, C_NOTES = 1, 6, 7, 8
 
@@ -70,7 +69,7 @@ def load_coding(path, sheet):
             sys.exit(f"{path}: row {r} ({code}) has a non-numeric value in issues: {issues!r}")
         if leak is not None and leak not in LEAK_LEVELS:
             sys.exit(f"{path}: row {r} ({code}) has leak={leak!r}; expected one of {LEAK_LEVELS}")
-        out[code] = {"issues": issues, "leak": leak, "notes": notes, "row": r}
+        out[code] = {"issues": issues, "leak": leak, "notes": notes, "row": r, "defect": ws.cell(row=r, column=3).value}
     return out
 
 
@@ -199,7 +198,6 @@ def compare(p1, p2, out):
     (out / "agreement.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     # ---- consensus workbook
-    study = {r["code"]: r for r in csv.DictReader(open(RES / "coding-sheet.csv", encoding="utf-8"))}
     wb = Workbook()
     ws = wb.active
     ws.title = "Consensus"
@@ -224,7 +222,7 @@ def compare(p1, p2, out):
         a, b = ca[code], cb[code]
         diffs = [n for n in ("issues", "leak") if a[n] != b[n]]
         status = ("Full agreement" if not diffs else "Disagree on: " + ", ".join(diffs)) + (" · calibration" if code in blind else "")
-        vals = [code, study[code]["seeded_defect"], status, a["issues"], a["leak"], b["issues"], b["leak"],
+        vals = [code, (ca.get(code) or {}).get("defect"), status, a["issues"], a["leak"], b["issues"], b["leak"],
                 a["issues"] if a["issues"] == b["issues"] else None, a["leak"] if a["leak"] == b["leak"] else None,
                 a["notes"], b["notes"], None]
         for c, v in enumerate(vals, start=1):

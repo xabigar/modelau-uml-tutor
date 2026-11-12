@@ -12,9 +12,9 @@ Scales: 1–5, Strongly disagree / Disagree / Neither agree nor disagree / Agree
 - **modelau_use**: How have you used ModelaU? (I haven’t used it / I explored it without working on an exercise / I used it to work on one exercise / I used it to work on several exercises)
 - **modelau_experience**: If you have used ModelaU, describe your experience. (optional)
 
-## Part A: ModelaU compared with the conventional chat in the video
+## Part A: the feedback dimensions
 
-Each statement is rated twice, once for ModelaU (`_mu`) and once for the conventional chat (`_chat`). "Feedback …"
+Each statement was rated twice, once for ModelaU (`_mu`) and once for the conventional chat reply shown in the video (`_chat`). Only the ModelaU ratings are analyzed and reported in the paper; the chat ratings were collected but are not reported, because a single reply is not a fair basis for comparison with a demonstration of the whole workspace. "Feedback …"
 
 - **A_specific** (Specific): points to the exact part of the student’s work it addresses (for example, a particular class, relationship, or step of the diagram), rather than giving general comments such as “review your diagram”
 - **A_selective** (Selective): focuses on a single issue per interaction, the most important at that moment, rather than listing every issue that could be raised at once

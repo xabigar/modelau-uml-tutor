@@ -256,9 +256,5 @@ export function getStudy(lang) {
 // ---------------------------------------------------------------- baseline prompts (English, language-independent)
 export const BASELINE_PROMPT = `You are a helpful tutor for UML modeling. The student's exercise statement and current PlantUML diagram are given below. Help the student improve their diagram. Do not give the complete solution.`;
 
-// Stricter conventional prompt: forbids giving the solution at all (not only the
-// complete one) and asks for guidance, as an instructor would phrase it.
-export const BASELINE_STRICT_PROMPT = `You are a helpful tutor for UML modeling. The student's exercise statement and current PlantUML diagram are given below. Help the student improve their diagram. Do not give the solution: guide the student to find it by themselves.`;
-
-// Strictest conventional prompt: also forbids direct corrections.
+// No-corrections baseline: also forbids direct corrections.
 export const BASELINE_NOCORR_PROMPT = `You are a helpful tutor for UML modeling. The student's exercise statement and current PlantUML diagram are given below. Help the student improve their diagram. Do not give the solution or direct corrections: guide the student to find them by themselves.`;

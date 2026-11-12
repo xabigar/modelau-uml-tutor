@@ -4,7 +4,7 @@
 // Run it from this folder. The tool repository is found through repo.js (MODELAU_REPO).
 // Options: --lang en|dev (default en; dev = tuning set, not reported), --tag NAME (suffix for the output file), --model ID (default: OPENAI_DEFAULT_MODEL or gpt-4o), --runs N
 // (default 3), --concurrency N (default 4), --limit N (only N new replies, for pilots),
-// --tutors LIST (default modelau,baseline; also baseline-strict, baseline-nocorr).
+// --tutors LIST (default modelau,baseline,baseline-nocorr).
 // Replies are appended to results/<lang>/replies-<model>.jsonl;
 // already-done items are skipped, so an interrupted run can simply be restarted.
 import { readFile, mkdir, appendFile } from 'node:fs/promises';
@@ -12,7 +12,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { REPO, repoPath, fromRepo } from './repo.js';
-import { getStudy, BASELINE_PROMPT, BASELINE_STRICT_PROMPT, BASELINE_NOCORR_PROMPT } from './seeds.js';
+import { getStudy, BASELINE_PROMPT, BASELINE_NOCORR_PROMPT } from './seeds.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const { buildRequest, buildStudentContext, extractProviderText, parseTutorReply, resolveDiagramReference, providers } = await fromRepo('lib.js');
@@ -26,7 +26,7 @@ const opt = (name, def) => (arg(name) === undefined ? def : Number(arg(name)));
 const runs = opt('--runs', 3);
 const concurrency = opt('--concurrency', 4);
 const limit = opt('--limit', Infinity);
-const tutors = (arg('--tutors') || 'modelau,baseline,baseline-strict,baseline-nocorr').split(',');
+const tutors = (arg('--tutors') || 'modelau,baseline,baseline-nocorr').split(',');
 const lang = arg('--lang') || 'en';
 const tag = arg('--tag');
 const { seeds, questions } = getStudy(lang);
@@ -126,7 +126,7 @@ async function worker() {
     const job = jobs[next++];
     try {
       const out = job.tutor === 'modelau' ? await runModelau(job.seed, job.question)
-        : await runBaseline(job.seed, job.question, ({ 'baseline-strict': BASELINE_STRICT_PROMPT, 'baseline-nocorr': BASELINE_NOCORR_PROMPT }[job.tutor] || BASELINE_PROMPT));
+        : await runBaseline(job.seed, job.question, (job.tutor === 'baseline-nocorr' ? BASELINE_NOCORR_PROMPT : BASELINE_PROMPT));
       const record = { key: job.key, seed: job.seed.id, diagramType: job.seed.diagramType, question: job.qType, run: job.run, tutor: job.tutor, model, mock, at: new Date().toISOString(), ...out };
       await appendFile(outFile, JSON.stringify(record) + '\n');
       finished++;
