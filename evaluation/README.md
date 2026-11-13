@@ -6,7 +6,7 @@ table and figure of Section 6, so that each number can be recomputed.
 ```
 evaluation/
   e1/                     E1, technical comparison (ModelaU vs. conventional tutoring prompts, same LLM)
-    seeds.js              the 9 seeded diagrams of 3 exercises, the 2 student questions, the baseline prompts, and the development set
+    seeds.js              the 9 seeded diagrams of 3 exercises, the 2 student questions, and the baseline prompts
     run.js                generates the replies (calls the LLM)
     analyze.js            the automatic measures of Table 1 and the reference counts
     repo.js               locates this repository: E1 imports the tutor's own prompt, request builder and parsers
@@ -15,7 +15,6 @@ evaluation/
       metrics.csv, summary.md                 automatic measures, one row per reply, and the summary behind Table 1
       prompt-modelau-v1.md, -v2.md            ModelaU's prompt before and after the design iteration
       coding-key.csv                          which tutor wrote each of the 54 coded replies (R001...)
-    results/dev/          3 extra class diagrams used to tune the last prompt iteration (outside the coded study), NOTES.md
     coding/               human coding of 54 replies by two authors
       E1_coding_author1.xlsx, E1_coding_author2.xlsx   each author's labels (Calibration: 12 replies, Coding: 42)
       agreement.py        agreement (kappa) and consensus sheet; final counts of the coded measures
@@ -39,7 +38,6 @@ The design principles with the E1 evidence and E2 ratings for each mechanism are
 | Table 1, automatic rows (words, ends with a question, element names cited exactly); references discarded (54 of 54 replies point at an element, 99 references, none discarded; 16 of 96 under the earlier rule) | `e1/results/en/summary.md`, `metrics.csv` | `e1/`: `node analyze.js --model gpt-5.4-mini-2026-03-17` |
 | Table 1, coded rows (issues, correction stated outright, in a question, only pointing) | `e1/coding/table1-coded.md` | `e1/`: `python3 coding/agreement.py finalize coding/consensus.xlsx --out OUT` |
 | Kappa and agreement (Threats to Validity) | `e1/coding/agreement.md` | `e1/`: `python3 coding/agreement.py compare coding/E1_coding_author1.xlsx coding/E1_coding_author2.xlsx --out OUT` |
-| Design iteration (development diagrams, Discussion) | `e1/results/dev/NOTES.md` and its replies | — |
 | Fig. 3 (rating distributions), Fig. 4 (mechanisms), E2 Results | `e2/e2-results.md` | `e2/`: `python3 analyze.py responses.csv --aggregate-only --out e2-results.md` |
 
 `analyze.js` rewrites `summary.md` and `metrics.csv` with identical content. The blinded codes of the coded replies (R001...)
@@ -79,9 +77,11 @@ The human coding uses the first run of each prompt for `modelau`, `baseline` and
 
 ## Notes on E2
 
-- Blank ratings are "don't know / not seen in the video" answers: each item is analyzed over the instructors who answered it,
-  and `e2-results.md` gives the n of every figure.
+- The analyzed export (`responses_completas_confirmadas.csv`) has no blank ratings: the eight instructors answered every item,
+  so every figure in `e2-results.md` has n = 8. (`analyze.py` still leaves blank cells out item by item, and the report gives
+  the n of every figure, should a future export contain "don't know" answers.)
 - Mechanism 4 changed while the questionnaire was open: it was "one scenario at a time" until 10 November 2026 and is now
   "at most three highlights". The two instructors who answered on 9 November saw the earlier wording in the form but had been
-  told before answering that the mechanism was now "at most three highlights"; their ratings (`B_scenario_*` in the export)
-  count for mechanism 4, and `analyze.py` merges them. The video in this folder is the current version.
+  told before answering that the mechanism was now "at most three highlights", and their confirmed answers for it are in
+  `B_cap_*`; the old `B_scenario_*` columns are kept in the export but not used (`analyze.py` falls back to them only if
+  `B_cap_*` is blank). The video in this folder is the current version.
