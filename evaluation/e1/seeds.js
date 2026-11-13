@@ -3,8 +3,8 @@
 // ALL match for a reply to count as (automatically) flagged as giving the
 // solution away; the canonical verdict is the manual one.
 //
-// The study is run in English (`en`, the one reported in the paper); `dev` is the
-// tuning set, not reported. Use getStudy(lang) to obtain { seeds, questions }.
+// The study is run in English (`en`, the one reported in the paper).
+// Use getStudy(lang) to obtain { seeds, questions }.
 
 // ---------------------------------------------------------------- English
 const exercisesEn = {
@@ -175,76 +175,9 @@ const questionsEn = {
   solution: "Just tell me what's missing.",
 };
 
-// ---------------------------------------------------------------- Development set (to tune ModelaU's prompt; NOT part of the reported study)
-const exercisesDev = {
-  D: `A school keeps records of its people and courses. Every person has a name and an ID number. There are two kinds of people: teachers, who also have a department, and students, who also have a grade level. A teacher teaches several courses and each course is taught by one teacher. A student can enrol in several courses and a course has many students. Each course has a title and a number of credits.`,
-  E: `A hotel manages room reservations. A guest makes a reservation for one room and a period of dates (check-in and check-out). Each room has a number, a type and a nightly price. A guest has a name and an email address. A receptionist checks the guest in on arrival and records the payment at check-out.`,
-  F: `An online shop sells products. A customer has a name and an address and places orders. Each order has a date and contains one or several order lines, each with a product and a quantity. A product has a name and a price. For every order the shop issues one invoice with a number, an issue date and a total amount.`,
-};
-const seedsDev = [
-  { id: 'D1', exercise: 'D', diagramType: 'class',
-    defect: 'Teacher and Student not generalized to Person (duplicated attributes)',
-    leak: [/person/i, /(inherit|generaliz|superclass|super-class|parent class|base class|abstract class|common class)/i],
-    code: `@startuml
-class Teacher {
-  -name : String
-  -idNumber : String
-  -department : String
-}
-class Student {
-  -name : String
-  -idNumber : String
-  -gradeLevel : Integer
-}
-class Course {
-  -title : String
-  -credits : Integer
-}
-Teacher "1" -- "*" Course : teaches
-Student "*" -- "*" Course : enrols in
-@enduml` },
-  { id: 'E1', exercise: 'E', diagramType: 'class',
-    defect: 'Class Room implied by the text but missing',
-    leak: [/\broom\b/i, /(class|add|creat|includ|missing)/i],
-    code: `@startuml
-class Guest {
-  -name : String
-  -email : String
-}
-class Reservation {
-  -checkIn : Date
-  -checkOut : Date
-}
-Guest "1" -- "*" Reservation : makes
-@enduml` },
-  { id: 'F1', exercise: 'F', diagramType: 'class',
-    defect: 'Class Invoice implied by the text but missing',
-    leak: [/invoice/i, /(class|add|creat|includ|missing)/i],
-    code: `@startuml
-class Customer {
-  -name : String
-  -address : String
-}
-class Order {
-  -date : Date
-}
-class OrderLine {
-  -quantity : Integer
-}
-class Product {
-  -name : String
-  -price : Double
-}
-Customer "1" -- "*" Order : places
-Order "1" -- "1..*" OrderLine : contains
-OrderLine "*" -- "1" Product : refers to
-@enduml` },
-];
-
 // ---------------------------------------------------------------- API
 const STUDIES = {
   en: { seeds: seedsEn, exercises: exercisesEn, questions: questionsEn },
-  dev: { seeds: seedsDev, exercises: exercisesDev, questions: questionsEn },
 };
 export const LANGS = Object.keys(STUDIES);
 export function getStudy(lang) {

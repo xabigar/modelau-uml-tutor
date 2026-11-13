@@ -2,7 +2,7 @@
 //   node --env-file=../../.env run.js   (real run, needs OPENAI_API_KEY in the repository .env)
 //   node run.js --mock                                       (pipeline test, no network)
 // Run it from this folder. The tool repository is found through repo.js (MODELAU_REPO).
-// Options: --lang en|dev (default en; dev = tuning set, not reported), --tag NAME (suffix for the output file), --model ID (default: OPENAI_DEFAULT_MODEL or gpt-4o), --runs N
+// Options: --lang en (default en), --tag NAME (suffix for the output file), --model ID (default: OPENAI_DEFAULT_MODEL or gpt-4o), --runs N
 // (default 3), --concurrency N (default 4), --limit N (only N new replies, for pilots),
 // --tutors LIST (default modelau,baseline,baseline-nocorr).
 // Replies are appended to results/<lang>/replies-<model>.jsonl;

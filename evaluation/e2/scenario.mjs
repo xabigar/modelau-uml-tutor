@@ -1,4 +1,4 @@
-// The demonstration scenario: a fresh exercise (not one of the nine evaluated diagrams nor the tuning diagrams).
+// The demonstration scenario: a fresh exercise (not one of the nine evaluated diagrams).
 export const EXERCISE = `A gym manages memberships and classes. Every person who uses the gym has a name and an email address. Members also have a membership plan and a start date; trainers also have a specialty. Members book places in classes; each class has a title, a schedule and a maximum capacity, and is run by one trainer. A member can book several classes and a class has many members. When a member books a class, the system checks that there are free places and sends a confirmation message. The receptionist signs up newcomers and charges the monthly fee.`;
 
 export const MEMBER = `class Member {
