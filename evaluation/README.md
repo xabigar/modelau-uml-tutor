@@ -74,14 +74,3 @@ The human coding uses the first run of each prompt for `modelau`, `baseline` and
 - **E2:** the questionnaire answers are not published row by row. Respondents agreed to the use of their answers in
   aggregated form, and the profile and free-text answers could identify them. `e2-results.md` is the aggregated output of
   `analyze.py` (option `--aggregate-only`); the open answers are summarized as themes in the paper.
-
-## Notes on E2
-
-- The analyzed export (`responses_completas_confirmadas.csv`) has no blank ratings: the eight instructors answered every item,
-  so every figure in `e2-results.md` has n = 8. (`analyze.py` still leaves blank cells out item by item, and the report gives
-  the n of every figure, should a future export contain "don't know" answers.)
-- Mechanism 4 changed while the questionnaire was open: it was "one scenario at a time" until 10 November 2026 and is now
-  "at most three highlights". The two instructors who answered on 9 November saw the earlier wording in the form but had been
-  told before answering that the mechanism was now "at most three highlights", and their confirmed answers for it are in
-  `B_cap_*`; the old `B_scenario_*` columns are kept in the export but not used (`analyze.py` falls back to them only if
-  `B_cap_*` is blank). The video in this folder is the current version.
